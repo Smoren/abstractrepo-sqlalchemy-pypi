@@ -1,0 +1,170 @@
+from typing import List, Generic, Optional
+import abc
+
+from sqlalchemy.orm import Query, Session
+from sqlalchemy.exc import NoResultFound, IntegrityError
+
+from abstractrepo.exceptions import ItemNotFoundException, UniqueViolationException, RelationViolationException
+from abstractrepo.order import OrderOptions
+from abstractrepo.paging import PagingOptions
+from abstractrepo.repo import CrudRepositoryInterface, TModel, TCreateSchema, TUpdateSchema, TIdValueType
+from abstractrepo.specification import SpecificationInterface
+
+from abstractrepo_sqlalchemy.order import SqlAlchemyOptionsConverter
+from abstractrepo_sqlalchemy.specification import SqlAlchemySpecificationConverter
+from abstractrepo_sqlalchemy.types import TDbModel
+
+
+class SqlAlchemyCrudRepository(
+    Generic[TDbModel, TModel, TIdValueType, TCreateSchema, TUpdateSchema],
+    CrudRepositoryInterface[TModel, TIdValueType, TCreateSchema, TUpdateSchema],
+    abc.ABC,
+):
+    def get_collection(
+        self,
+        filter_spec: Optional[SpecificationInterface[TModel, bool]] = None,
+        order_options: Optional[OrderOptions] = None,
+        paging_options: Optional[PagingOptions] = None,
+    ) -> List[TModel]:
+        with self._create_session() as sess:
+            query = sess.query(self._get_db_model_class())
+            query = self._apply_filter(query, filter_spec)
+            query = self._apply_order(query, order_options)
+            query = self._apply_paging(query, paging_options)
+            return [self._convert_db_item_to_schema(db_item) for db_item in query.all()]
+
+    def count(self, filter_spec: Optional[SpecificationInterface[TModel, bool]] = None) -> int:
+        with self._create_session() as sess:
+            query = sess.query(self._get_db_model_class())
+            query = self._apply_filter(query, filter_spec)
+            return query.count()
+
+    def get_item(self, item_id: TIdValueType) -> TModel:
+        with self._create_session() as sess:
+            try:
+                db_item = self._create_select_query_by_id(item_id, sess).one()
+                return self._convert_db_item_to_schema(db_item)
+            except NoResultFound:
+                sess.rollback()
+                raise ItemNotFoundException(self._get_db_model_class(), item_id)
+
+    def exists(self, item_id: TIdValueType) -> bool:
+        with self._create_session() as sess:
+            return self._create_select_query_by_id(item_id, sess).exists().scalar()
+
+    def create(self, form: TCreateSchema) -> TModel:
+        with self._create_session() as sess:
+            try:
+                db_item = self._create_from_schema(form)
+                sess.add(db_item)
+                sess.commit()
+                sess.refresh(db_item)
+                return self._convert_db_item_to_schema(db_item)
+            except IntegrityError as e:
+                sess.rollback()
+                self._check_violations(e, form, 'create')
+
+    def update(self, item_id: TIdValueType, form: TUpdateSchema) -> TModel:
+        with self._create_session() as sess:
+            try:
+                db_item = self._create_select_query_by_id(item_id, sess).one()
+                self._update_from_schema(db_item, form)
+                sess.add(db_item)
+                sess.commit()
+                sess.refresh(db_item)
+                return self._convert_db_item_to_schema(db_item)
+            except NoResultFound:
+                sess.rollback()
+                raise ItemNotFoundException(self._get_db_model_class(), item_id)
+            except IntegrityError as e:
+                sess.rollback()
+                self._check_violations(e, form, 'update')
+
+    def delete(self, item_id: TIdValueType) -> TModel:
+        with self._create_session() as sess:
+            try:
+                db_item = self._create_select_query_by_id(item_id, sess).one()
+                sess.delete(db_item)
+                sess.commit()
+                return self._convert_db_item_to_schema(db_item)
+            except NoResultFound:
+                sess.rollback()
+                raise ItemNotFoundException(self._get_db_model_class(), item_id)
+
+    def _apply_filter(self, query: Query[TDbModel], filter_spec: SpecificationInterface) -> Query[TDbModel]:
+        if filter_spec is None:
+            return self._apply_default_filter(query)
+
+        condition = SqlAlchemySpecificationConverter[TDbModel]() \
+            .convert(filter_spec) \
+            .is_satisfied_by(self._get_db_model_class())
+
+        return query.filter(condition)
+
+    def _apply_order(self, query: Query[TDbModel], order_options: Optional[OrderOptions] = None) -> Query[TDbModel]:
+        if order_options is None:
+            return self._apply_default_order(query)
+
+        order_options = SqlAlchemyOptionsConverter[TDbModel]().convert(order_options)
+        return query.order_by(*order_options.to_expression(self._get_db_model_class()))
+
+    @staticmethod
+    def _apply_paging(query: Query[TDbModel], paging_options: Optional[PagingOptions] = None) -> Query[TDbModel]:
+        if paging_options is None:
+            return query
+
+        # TODO use converter
+        if paging_options.limit is not None:
+            query = query.limit(paging_options.limit)
+        if paging_options.offset is not None:
+            query = query.offset(paging_options.offset)
+
+        return query
+
+    @staticmethod
+    @abc.abstractmethod
+    def _create_session() -> Session:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abc.abstractmethod
+    def _get_db_model_class() -> type[TDbModel]:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abc.abstractmethod
+    def _create_select_query_by_id(item_id: TIdValueType, sess: Session) -> Query[TDbModel]:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abc.abstractmethod
+    def _convert_db_item_to_schema(db_item: TDbModel) -> TModel:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abc.abstractmethod
+    def _create_from_schema(form: TCreateSchema) -> TDbModel:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abc.abstractmethod
+    def _update_from_schema(db_item: TDbModel, form: TUpdateSchema) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abc.abstractmethod
+    def _apply_default_filter(query: Query[TDbModel]) -> Query[TDbModel]:
+        raise NotImplementedError()
+
+    @staticmethod
+    @abc.abstractmethod
+    def _apply_default_order(query: Query[TDbModel]) -> Query[TDbModel]:
+        raise NotImplementedError()
+
+    def _check_violations(self, e: IntegrityError, form: object, action: str) -> None:
+        error_msg = str(e.orig).lower()
+        if "unique" in error_msg or "duplicate" in error_msg:
+            raise UniqueViolationException(self.model_class, action, form)
+        elif "foreign" in error_msg or "reference" in error_msg:
+            raise RelationViolationException(self.model_class, action, form)
+        raise e
