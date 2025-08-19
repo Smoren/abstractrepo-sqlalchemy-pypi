@@ -1,4 +1,4 @@
-from typing import List, Generic, Optional
+from typing import List, Generic, Optional, Type
 import abc
 
 from sqlalchemy.orm import Query, Session
@@ -91,7 +91,7 @@ class SqlAlchemyCrudRepository(
                 sess.rollback()
                 raise ItemNotFoundException(self._get_db_model_class(), item_id)
 
-    def _apply_filter(self, query: Query[TDbModel], filter_spec: SpecificationInterface) -> Query[TDbModel]:
+    def _apply_filter(self, query: Query[Type[TDbModel]], filter_spec: SpecificationInterface) -> Query[Type[TDbModel]]:
         if filter_spec is None:
             return self._apply_default_filter(query)
 
@@ -101,15 +101,14 @@ class SqlAlchemyCrudRepository(
 
         return query.filter(condition)
 
-    def _apply_order(self, query: Query[TDbModel], order_options: Optional[OrderOptions] = None) -> Query[TDbModel]:
+    def _apply_order(self, query: Query[Type[TDbModel]], order_options: Optional[OrderOptions] = None) -> Query[Type[TDbModel]]:
         if order_options is None:
             return self._apply_default_order(query)
 
         order_options = SqlAlchemyOptionsConverter[TDbModel]().convert(order_options)
         return query.order_by(*order_options.to_expression(self._get_db_model_class()))
 
-    @staticmethod
-    def _apply_paging(query: Query[TDbModel], paging_options: Optional[PagingOptions] = None) -> Query[TDbModel]:
+    def _apply_paging(self, query: Query[Type[TDbModel]], paging_options: Optional[PagingOptions] = None) -> Query[Type[TDbModel]]:
         if paging_options is None:
             return query
 
@@ -121,44 +120,36 @@ class SqlAlchemyCrudRepository(
 
         return query
 
-    @staticmethod
     @abc.abstractmethod
-    def _create_session() -> Session:
+    def _create_session(self) -> Session:
         raise NotImplementedError()
 
-    @staticmethod
     @abc.abstractmethod
-    def _get_db_model_class() -> type[TDbModel]:
+    def _get_db_model_class(self) -> Type[TDbModel]:
         raise NotImplementedError()
 
-    @staticmethod
     @abc.abstractmethod
-    def _create_select_query_by_id(item_id: TIdValueType, sess: Session) -> Query[TDbModel]:
+    def _create_select_query_by_id(self, item_id: TIdValueType, sess: Session) -> Query[Type[TDbModel]]:
         raise NotImplementedError()
 
-    @staticmethod
     @abc.abstractmethod
-    def _convert_db_item_to_schema(db_item: TDbModel) -> TModel:
+    def _convert_db_item_to_schema(self, db_item: TDbModel) -> TModel:
         raise NotImplementedError()
 
-    @staticmethod
     @abc.abstractmethod
-    def _create_from_schema(form: TCreateSchema) -> TDbModel:
+    def _create_from_schema(self, form: TCreateSchema) -> TDbModel:
         raise NotImplementedError()
 
-    @staticmethod
     @abc.abstractmethod
-    def _update_from_schema(db_item: TDbModel, form: TUpdateSchema) -> None:
+    def _update_from_schema(self, db_item: TDbModel, form: TUpdateSchema) -> None:
         raise NotImplementedError()
 
-    @staticmethod
     @abc.abstractmethod
-    def _apply_default_filter(query: Query[TDbModel]) -> Query[TDbModel]:
+    def _apply_default_filter(self, query: Query[Type[TDbModel]]) -> Query[Type[TDbModel]]:
         raise NotImplementedError()
 
-    @staticmethod
     @abc.abstractmethod
-    def _apply_default_order(query: Query[TDbModel]) -> Query[TDbModel]:
+    def _apply_default_order(self, query: Query[Type[TDbModel]]) -> Query[Type[TDbModel]]:
         raise NotImplementedError()
 
     def _check_violations(self, e: IntegrityError, form: object, action: str) -> None:

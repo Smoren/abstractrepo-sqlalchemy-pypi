@@ -1,11 +1,35 @@
 import abc
-from typing import Optional, List, Type
+from typing import Optional, List, Type, Generic
 
 from abstractrepo.exceptions import ItemNotFoundException, UniqueViolationException
 from abstractrepo.specification import SpecificationInterface, Operator, AttributeSpecification
 from abstractrepo.repo import CrudRepositoryInterface, ListBasedCrudRepository, AsyncCrudRepositoryInterface, \
-    AsyncListBasedCrudRepository
-from tests.fixtures.models import News, NewsCreateForm, NewsUpdateForm, User, UserCreateForm, UserUpdateForm
+    AsyncListBasedCrudRepository, TUpdateSchema, TCreateSchema, TModel, TIdValueType
+
+from mock_alchemy.mocking import UnifiedAlchemyMagicMock
+from sqlalchemy.orm import Query, Session
+
+from abstractrepo_sqlalchemy.repo import SqlAlchemyCrudRepository
+from abstractrepo_sqlalchemy.types import TDbModel
+
+from tests.fixtures.models import News, NewsCreateForm, NewsUpdateForm, User, UserCreateForm, UserUpdateForm, OrmNews
+from tests.fixtures.session import MyUnifiedAlchemyMagicMock
+
+
+class OrmCrudRepository(
+    Generic[TDbModel, TModel, TIdValueType, TCreateSchema, TUpdateSchema],
+    SqlAlchemyCrudRepository[TDbModel, TModel, TIdValueType, TCreateSchema, TUpdateSchema],
+    abc.ABC,
+):
+    _session: Session
+
+    def __init__(self):
+        super().__init__()
+        self._session = MyUnifiedAlchemyMagicMock()
+        self._session.commit()
+
+    def _create_session(self) -> Session:
+        return self._session
 
 
 class NewsRepositoryInterface(CrudRepositoryInterface[News, int, NewsCreateForm, NewsUpdateForm], abc.ABC):
@@ -24,38 +48,42 @@ class AsyncUserRepositoryInterface(AsyncCrudRepositoryInterface[User, int, UserC
     pass
 
 
-class ListBasedNewsRepository(
-    ListBasedCrudRepository[News, int, NewsCreateForm, NewsUpdateForm],
+class SqlAlchemyNewsRepository(
+    OrmCrudRepository[News, OrmNews, int, NewsCreateForm, NewsUpdateForm],
     NewsRepositoryInterface,
 ):
-    _next_id: int
-
-    def __init__(self, items: Optional[List[News]] = None):
-        super().__init__(items)
-        self._next_id = 0
-
     @property
     def model_class(self) -> Type[News]:
         return News
 
-    def _create_model(self, form: NewsCreateForm, new_id: int) -> News:
-        return News(
-            id=new_id,
-            title=form.title,
-            text=form.text
-        )
+    def _get_db_model_class(self) -> type[TDbModel]:
+        return OrmNews
 
-    def _update_model(self, model: News, form: NewsUpdateForm) -> News:
-        model.title = form.title
-        model.text = form.text
-        return model
+    def _create_select_query_by_id(self, item_id: int, sess: Session) -> Query[Type[OrmNews]]:
+        return sess.query(OrmNews).filter(OrmNews.id == item_id)
 
-    def _generate_id(self) -> int:
-        self._next_id += 1
-        return self._next_id
+    def _convert_db_item_to_schema(self, db_item: OrmNews) -> TModel:
+        return News.model_validate({
+            'id': db_item.id,
+            'title': db_item.title,
+            'text': db_item.text,
+        })
 
-    def _get_id_filter_specification(self, item_id: int) -> SpecificationInterface[News, bool]:
-        return AttributeSpecification('id', item_id, Operator.E)
+    def _create_from_schema(self, form: NewsCreateForm) -> OrmNews:
+        return OrmNews(**{
+            'title': form.title,
+            'text': form.text,
+        })
+
+    def _update_from_schema(self, db_item: OrmNews, form: NewsUpdateForm) -> None:
+        db_item.title = form.title
+        db_item.text = form.text
+
+    def _apply_default_filter(self, query: Query[Type[OrmNews]]) -> Query[Type[OrmNews]]:
+        return query
+
+    def _apply_default_order(self, query: Query[Type[OrmNews]]) -> Query[Type[OrmNews]]:
+        return query.order_by(OrmNews.id)
 
 
 class AsyncListBasedNewsRepository(

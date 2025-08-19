@@ -1,61 +1,57 @@
-from typing import Optional, Union
+from typing import Optional
+
+from pydantic import BaseModel
+from sqlalchemy import Column, String, Integer, TEXT
+from sqlalchemy.orm import declarative_base
+
+Base = declarative_base()
 
 
-class News:
+class News(BaseModel):
     id: int
     title: str
     text: Optional[str]
 
-    def __init__(self, id: int, title: str, text: Optional[str] = None):
-        self.id = id
-        self.title = title
-        self.text = text
+
+class OrmNews(Base):
+    __tablename__ = "news"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(255), nullable=False)
+    text = Column(TEXT, nullable=True)
 
 
-class NewsCreateForm:
+class NewsCreateForm(BaseModel):
     title: str
-    text: Union[str, None]
-
-    def __init__(self, title: str, text: Optional[str] = None):
-        self.title = title
-        self.text = text
+    text: Optional[str]
 
 
-class NewsUpdateForm:
+class NewsUpdateForm(BaseModel):
     title: str
-    text: str
-
-    def __init__(self, title: str, text: Optional[str] = None):
-        self.title = title
-        self.text = text
+    text: Optional[str]
 
 
-class User:
+class User(BaseModel):
     id: int
     username: str
     password: str
     display_name: str
 
-    def __init__(self, id: int, username: str, password: str, display_name: str):
-        self.id = id
-        self.username = username
-        self.password = password
-        self.display_name = display_name
+
+class OrmUser(Base):
+    __tablename__ = "user"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(255), nullable=False)
+    password = Column(String(255), nullable=False)
+    display_name = Column(String(255), nullable=False)
 
 
-class UserCreateForm:
+class UserCreateForm(BaseModel):
     username: str
     password: str
     display_name: str
 
-    def __init__(self, username: str, password: str, display_name: str):
-        self.username = username
-        self.password = password
-        self.display_name = display_name
 
-
-class UserUpdateForm:
+class UserUpdateForm(BaseModel):
     display_name: str
-
-    def __init__(self, display_name: str):
-        self.display_name = display_name
