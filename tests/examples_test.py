@@ -5,12 +5,16 @@ from abstractrepo.specification import Operator, AttributeSpecification, AndSpec
 from abstractrepo.order import OrderDirection, OrderOptionsBuilder
 from abstractrepo.paging import PagingOptions, PageResolver
 
-from abstractrepo_sqlalchemy.repo import SqlAlchemyCrudRepository
-
+from abstractrepo_sqlalchemy.specification import SqlAlchemyAttributeSpecification
 from tests.fixtures.repo import (ListBasedNewsRepository, ListBasedUserRepository,
                                  AsyncListBasedNewsRepository, AsyncListBasedUserRepository)
-from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm
+from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm, News
 
+
+def test_first():
+    spec = SqlAlchemyAttributeSpecification[News](attribute_name='title', attribute_value='Test', operator=Operator.E)
+    assert spec.is_satisfied_by(News(id=1, title='Test', text="Test text")) == True
+    assert spec.is_satisfied_by(News(id=1, title='Test2', text="Test text")) == False
 
 def test_news_repo():
     repo = ListBasedNewsRepository()
