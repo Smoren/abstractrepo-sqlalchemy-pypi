@@ -45,7 +45,8 @@ class AsyncNewsRepositoryInterface(AsyncCrudRepositoryInterface[News, int, NewsC
 
 
 class UserRepositoryInterface(CrudRepositoryInterface[User, int, UserCreateForm, UserUpdateForm], abc.ABC):
-    pass
+    def get_by_username(self, username: str) -> User:
+        raise NotImplementedError()
 
 
 class AsyncUserRepositoryInterface(AsyncCrudRepositoryInterface[User, int, UserCreateForm, UserUpdateForm], abc.ABC):
@@ -130,16 +131,10 @@ class AsyncListBasedNewsRepository(
         return AttributeSpecification('id', item_id, Operator.E)
 
 
-class ListBasedUserRepository(
-    ListBasedCrudRepository[User, int, UserCreateForm, UserUpdateForm],
+class SqlAlchemyUserRepository(
+    OrmCrudRepository[OrmUser, User, int, UserCreateForm, UserUpdateForm],
     UserRepositoryInterface,
 ):
-    _next_id: int
-
-    def __init__(self, items: Optional[List[User]] = None):
-        super().__init__(items)
-        self._next_id = 0
-
     def get_by_username(self, username: str) -> User:
         items = self.get_collection(AttributeSpecification('username', username))
         if len(items) == 0:
@@ -151,30 +146,38 @@ class ListBasedUserRepository(
     def model_class(self) -> Type[User]:
         return User
 
-    def _create_model(self, form: UserCreateForm, new_id: int) -> User:
-        if self._username_exists(form.username):
-            raise UniqueViolationException(User, 'create', form)
+    def _username_exists(self, username: str) -> bool:
+        return self.count(AttributeSpecification('username', username)) > 0
 
+    def _get_db_model_class(self) -> Type[OrmUser]:
+        return OrmUser
+
+    def _create_select_query_by_id(self, item_id: int, sess: Session) -> Query[Type[OrmUser]]:
+        return sess.query(OrmUser).filter(OrmUser.id == item_id)
+
+    def _convert_db_item_to_schema(self, db_item: OrmUser) -> User:
         return User(
-            id=new_id,
+            id=db_item.id,
+            username=db_item.username,
+            password=db_item.password,
+            display_name=db_item.display_name,
+        )
+
+    def _create_from_schema(self, form: UserCreateForm) -> OrmUser:
+        return OrmUser(
             username=form.username,
             password=form.password,
             display_name=form.display_name,
         )
 
-    def _update_model(self, model: User, form: UserUpdateForm) -> User:
-        model.display_name = form.display_name
-        return model
+    def _update_from_schema(self, db_item: OrmUser, form: UserUpdateForm) -> None:
+        db_item.display_name = form.display_name
 
-    def _username_exists(self, username: str) -> bool:
-        return self.count(AttributeSpecification('username', username)) > 0
+    def _apply_default_filter(self, query: Query[Type[OrmUser]]) -> Query[Type[OrmUser]]:
+        return query
 
-    def _generate_id(self) -> int:
-        self._next_id += 1
-        return self._next_id
-
-    def _get_id_filter_specification(self, item_id: int) -> SpecificationInterface[User, bool]:
-        return AttributeSpecification('id', item_id, Operator.E)
+    def _apply_default_order(self, query: Query[Type[OrmUser]]) -> Query[Type[OrmUser]]:
+        return query.order_by(OrmUser.id)
 
 
 class AsyncSqlAlchemyUserRepository(
