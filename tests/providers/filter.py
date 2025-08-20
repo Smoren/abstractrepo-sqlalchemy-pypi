@@ -2,9 +2,8 @@ from typing import Generator, Tuple, List
 
 from abstractrepo.specification import SpecificationInterface, AttributeSpecification, Operator, AndSpecification, \
     OrSpecification, NotSpecification
-from tests.fixtures.repo import NewsRepositoryInterface, \
-    AsyncListBasedNewsRepository, AsyncNewsRepositoryInterface, SqlAlchemyNewsRepository
-from tests.fixtures.models import News, NewsCreateForm
+from tests.fixtures.repo import AsyncNewsRepositoryInterface
+from tests.fixtures.models import News
 
 
 def data_provider_for_news_collection(size: int, with_no_text_item: bool = False) -> Generator[List[News], None, None]:
@@ -21,17 +20,20 @@ def data_provider_for_news_collection(size: int, with_no_text_item: bool = False
     yield result
 
 
-def data_provider_for_news_repo_async(size: int, with_no_text_item: bool = False) -> Generator[AsyncNewsRepositoryInterface, None, None]:
+def data_provider_for_news_collection_async(size: int, with_no_text_item: bool = False) -> Generator[AsyncNewsRepositoryInterface, None, None]:
     # Helper function to run async generator to completion
     async def collect():
-        repo = AsyncListBasedNewsRepository()
+        next_id = 1
+        result = []
         for i in range(size - int(with_no_text_item)):
-            await repo.create(NewsCreateForm(title=f'Title {i + 1}', text=f'Text {i + 1}'))
+            result.append(News(id=next_id, title=f'Title {i + 1}', text=f'Text {i + 1}'))
+            next_id += 1
 
         if with_no_text_item:
-            await repo.create(NewsCreateForm(title=f'Title for None text', text=None))
+            result.append(News(id=next_id, title=f'Title for None text', text=None))
+            next_id += 1
 
-        return [repo]
+        return [result]
 
     # Run the async collection synchronously
     import asyncio

@@ -26,3 +26,12 @@ def db_session():
         for table in reversed(Base.metadata.sorted_tables):
             session.execute(table.delete())
         session.commit()
+
+
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def async_db_session():
+    async with TEST_DB.async_session() as session:
+        yield
+        for table in reversed(Base.metadata.sorted_tables):
+            await session.execute(table.delete())
+        await session.commit()

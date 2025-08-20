@@ -5,9 +5,9 @@ import pytest
 
 from abstractrepo.specification import SpecificationInterface, AttributeSpecification, Operator
 from tests.fixtures.models import News
-from tests.fixtures.repo import SqlAlchemyNewsRepository, AsyncListBasedNewsRepository
+from tests.fixtures.repo import SqlAlchemyNewsRepository, AsyncSqlAlchemyNewsRepository
 from tests.providers.filter import data_provider_for_news_filter, data_provider_for_news_collection, \
-    data_provider_for_news_repo_async
+    data_provider_for_news_collection_async
 
 
 @pytest.mark.parametrize("items", data_provider_for_news_collection(101, with_no_text_item=True))
@@ -23,10 +23,12 @@ def test_filter(items: List[News], test_case: Tuple[SpecificationInterface[News,
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("repo", data_provider_for_news_repo_async(101, with_no_text_item=True))
+@pytest.mark.parametrize("items", data_provider_for_news_collection_async(101, with_no_text_item=True))
 @pytest.mark.parametrize("test_case", data_provider_for_news_filter())
-async def test_filter_async(repo: AsyncListBasedNewsRepository, test_case: Tuple[SpecificationInterface[News, bool], List[News]]):
+async def test_filter_async(items: List[News], test_case: Tuple[SpecificationInterface[News, bool], List[News]]):
     filter_spec, expected = test_case
+    repo = AsyncSqlAlchemyNewsRepository()
+    await repo.create_default_mock_collection(items)
     actual = await repo.get_collection(filter_spec=filter_spec)
     actual_count = await repo.count(filter_spec=filter_spec)
     assert pickle.dumps(actual) == pickle.dumps(expected)
@@ -49,8 +51,11 @@ def test_filter_errors(items: List[News]):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("repo", data_provider_for_news_repo_async(100))
-async def test_filter_errors(repo: AsyncListBasedNewsRepository):
+@pytest.mark.parametrize("items", data_provider_for_news_collection_async(100))
+async def test_filter_errors_async(items: List[News]):
+    repo = AsyncSqlAlchemyNewsRepository()
+    await repo.create_default_mock_collection(items)
+
     with pytest.raises(ValueError):
         await repo.get_collection(AttributeSpecification('id', 12, Operator.IN))
 
