@@ -41,7 +41,7 @@ class AsyncUserRepositoryInterface(AsyncCrudRepositoryInterface[User, int, UserC
 
 
 class SqlAlchemyNewsRepository(
-    OrmCrudRepository[News, OrmNews, int, NewsCreateForm, NewsUpdateForm],
+    OrmCrudRepository[OrmNews, News, int, NewsCreateForm, NewsUpdateForm],
     NewsRepositoryInterface,
 ):
     @property
