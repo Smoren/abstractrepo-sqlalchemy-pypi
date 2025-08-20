@@ -2,7 +2,7 @@ test:
 	. .tox/py/bin/activate && pytest
 
 coverage:
-	. .tox/py/bin/activate && coverage run -m --source=abstractrepo pytest && coverage report -m && coverage html
+	. .tox/py/bin/activate && coverage run -m --source=abstractrepo_sqlalchemy pytest && coverage report -m && coverage html
 
 cov:
 	make coverage
