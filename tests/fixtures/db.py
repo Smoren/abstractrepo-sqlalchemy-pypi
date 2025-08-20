@@ -11,16 +11,13 @@ class Database:
         self.scoped_session = scoped_session(self.session_factory)
 
     def create_tables(self):
-        """Создание таблиц"""
         Base.metadata.create_all(self.engine)
 
     def drop_tables(self):
-        """Удаление таблиц"""
         Base.metadata.drop_all(self.engine)
 
     @contextmanager
     def session(self):
-        """Менеджер контекста для сессии"""
         session = self.scoped_session()
         try:
             yield session
@@ -33,5 +30,4 @@ class Database:
             self.scoped_session.remove()
 
 
-# Глобальный экземпляр для тестов
 TEST_DB = Database()
