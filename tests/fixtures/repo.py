@@ -1,18 +1,21 @@
 import abc
-from typing import Optional, List, Type, Generic
+from typing import Optional, List, Type, Generic, Tuple
 
 from abstractrepo.exceptions import ItemNotFoundException, UniqueViolationException
 from abstractrepo.specification import SpecificationInterface, Operator, AttributeSpecification
 from abstractrepo.repo import CrudRepositoryInterface, ListBasedCrudRepository, AsyncCrudRepositoryInterface, \
     AsyncListBasedCrudRepository, TUpdateSchema, TCreateSchema, TModel, TIdValueType
+from sqlalchemy import Select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy.orm import Query, Session
 
-from abstractrepo_sqlalchemy.repo import SqlAlchemyCrudRepository
+from abstractrepo_sqlalchemy.repo import SqlAlchemyCrudRepository, AsyncSqlAlchemyCrudRepository
 from abstractrepo_sqlalchemy.types import TDbModel
 from tests.fixtures.db import TEST_DB
 
-from tests.fixtures.models import News, NewsCreateForm, NewsUpdateForm, User, UserCreateForm, UserUpdateForm, OrmNews
+from tests.fixtures.models import News, NewsCreateForm, NewsUpdateForm, User, UserCreateForm, UserUpdateForm, OrmNews, \
+    OrmUser
 
 
 class OrmCrudRepository(
@@ -22,6 +25,15 @@ class OrmCrudRepository(
 ):
     def _create_session(self) -> Session:
         return TEST_DB.session()
+
+
+class AsyncOrmCrudRepository(
+    Generic[TDbModel, TModel, TIdValueType, TCreateSchema, TUpdateSchema],
+    AsyncSqlAlchemyCrudRepository[TDbModel, TModel, TIdValueType, TCreateSchema, TUpdateSchema],
+    abc.ABC,
+):
+    def _create_session(self) -> AsyncSession:
+        return TEST_DB.async_session()
 
 
 class NewsRepositoryInterface(CrudRepositoryInterface[News, int, NewsCreateForm, NewsUpdateForm], abc.ABC):
@@ -165,16 +177,10 @@ class ListBasedUserRepository(
         return AttributeSpecification('id', item_id, Operator.E)
 
 
-class AsyncListBasedUserRepository(
-    AsyncListBasedCrudRepository[User, int, UserCreateForm, UserUpdateForm],
+class AsyncSqlAlchemyUserRepository(
+    AsyncOrmCrudRepository[OrmUser, User, int, UserCreateForm, UserUpdateForm],
     AsyncUserRepositoryInterface,
 ):
-    _next_id: int
-
-    def __init__(self, items: Optional[List[User]] = None):
-        super().__init__(items)
-        self._next_id = 0
-
     async def get_by_username(self, username: str) -> User:
         items = await self.get_collection(AttributeSpecification('username', username))
         if len(items) == 0:
@@ -186,28 +192,36 @@ class AsyncListBasedUserRepository(
     def model_class(self) -> Type[User]:
         return User
 
-    async def _create_model(self, form: UserCreateForm, new_id: int) -> User:
-        if await self._username_exists(form.username):
-            raise UniqueViolationException(User, 'create', form)
+    async def _username_exists(self, username: str) -> bool:
+        count = await self.count(AttributeSpecification('username', username))
+        return count > 0
 
+    def _get_db_model_class(self) -> Type[OrmUser]:
+        return OrmUser
+
+    def _create_select_stmt_by_id(self, item_id: int) -> Select[Tuple[OrmUser]]:
+        return Select(OrmNews).where(OrmNews.id == item_id)
+
+    def _convert_db_item_to_schema(self, db_item: OrmUser) -> TModel:
         return User(
-            id=new_id,
+            id=db_item.id,
+            username=db_item.username,
+            password=db_item.password,
+            display_name=db_item.display_name,
+        )
+
+    def _create_from_schema(self, form: UserCreateForm) -> OrmUser:
+        return OrmUser(
             username=form.username,
             password=form.password,
             display_name=form.display_name,
         )
 
-    async def _update_model(self, model: User, form: UserUpdateForm) -> User:
-        model.display_name = form.display_name
-        return model
+    def _update_from_schema(self, db_item: int, form: UserUpdateForm) -> None:
+        db_item.display_name = form.display_name
 
-    async def _username_exists(self, username: str) -> bool:
-        count = await self.count(AttributeSpecification('username', username))
-        return count > 0
+    def _apply_default_filter(self, stmt: Select[Tuple[OrmUser]]) -> Select[Tuple[OrmUser]]:
+        return stmt
 
-    async def _generate_id(self) -> int:
-        self._next_id += 1
-        return self._next_id
-
-    def _get_id_filter_specification(self, item_id: int) -> SpecificationInterface[User, bool]:
-        return AttributeSpecification('id', item_id, Operator.E)
+    def _apply_default_order(self, stmt: Select[Tuple[OrmUser]]) -> Select[Tuple[OrmUser]]:
+        return stmt.order_by(OrmUser.id)

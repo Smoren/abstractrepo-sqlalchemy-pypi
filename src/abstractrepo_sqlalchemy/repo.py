@@ -310,7 +310,7 @@ class AsyncSqlAlchemyCrudRepository(
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _apply_default_order(self, query: Select[Tuple[TDbModel]]) -> Select[Tuple[TDbModel]]:
+    def _apply_default_order(self, stmt: Select[Tuple[TDbModel]]) -> Select[Tuple[TDbModel]]:
         raise NotImplementedError()
 
     def _check_violations(self, e: IntegrityError, form: object, action: str) -> None:

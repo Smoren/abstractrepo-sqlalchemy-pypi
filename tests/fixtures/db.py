@@ -1,20 +1,46 @@
+import asyncio
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
-from contextlib import contextmanager
+from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, async_sessionmaker, create_async_engine
+from contextlib import contextmanager, asynccontextmanager
 from .models import Base
 
 
 class Database:
-    def __init__(self, db_url="sqlite:///:memory:"):
+    def __init__(self, db_url="sqlite:///:memory:", async_db_url="sqlite+aiosqlite:///:memory:"):
         self.engine = create_engine(db_url, connect_args={"check_same_thread": False})
         self.session_factory = sessionmaker(bind=self.engine)
         self.scoped_session = scoped_session(self.session_factory)
+
+        self.async_engine = create_async_engine(
+            async_db_url,
+            connect_args={"check_same_thread": False},
+            echo=False
+        )
+        self.async_scoped_session = async_scoped_session(
+            async_sessionmaker(
+                bind=self.async_engine,
+                class_=AsyncSession,
+                expire_on_commit=False,
+                autoflush=False
+            ),
+            scopefunc=asyncio.current_task,
+        )
 
     def create_tables(self):
         Base.metadata.create_all(self.engine)
 
     def drop_tables(self):
         Base.metadata.drop_all(self.engine)
+
+    async def async_create_tables(self):
+        async with self.async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+    async def async_drop_tables(self):
+        async with self.async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
 
     @contextmanager
     def session(self):
@@ -28,6 +54,19 @@ class Database:
         finally:
             session.close()
             self.scoped_session.remove()
+
+    @asynccontextmanager
+    async def async_session(self):
+        session = self.async_scoped_session()
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+            await self.async_scoped_session.remove()
 
 
 TEST_DB = Database()
