@@ -67,24 +67,24 @@ class SqlAlchemyNewsRepository(
                 sess.add(OrmNews(id=item.id, title=item.title, text=item.text))
             sess.commit()
 
-    def _get_db_model_class(self) -> type[TDbModel]:
+    def _get_db_model_class(self) -> type[OrmNews]:
         return OrmNews
 
     def _create_select_query_by_id(self, item_id: int, sess: Session) -> Query[Type[OrmNews]]:
         return sess.query(OrmNews).filter(OrmNews.id == item_id)
 
-    def _convert_db_item_to_schema(self, db_item: OrmNews) -> TModel:
-        return News.model_validate({
-            'id': db_item.id,
-            'title': db_item.title,
-            'text': db_item.text,
-        })
+    def _convert_db_item_to_schema(self, db_item: OrmNews) -> News:
+        return News(
+            id=db_item.id,
+            title=db_item.title,
+            text=db_item.text,
+        )
 
     def _create_from_schema(self, form: NewsCreateForm) -> OrmNews:
-        return OrmNews(**{
-            'title': form.title,
-            'text': form.text,
-        })
+        return OrmNews(
+            title=form.title,
+            text=form.text,
+        )
 
     def _update_from_schema(self, db_item: OrmNews, form: NewsUpdateForm) -> None:
         db_item.title = form.title
@@ -97,38 +97,51 @@ class SqlAlchemyNewsRepository(
         return query.order_by(OrmNews.id)
 
 
-class AsyncListBasedNewsRepository(
-    AsyncListBasedCrudRepository[News, int, NewsCreateForm, NewsUpdateForm],
+class AsyncSqlAlchemyNewsRepository(
+    AsyncSqlAlchemyCrudRepository[OrmNews, News, int, NewsCreateForm, NewsUpdateForm],
     AsyncNewsRepositoryInterface,
 ):
-    _next_id: int
-
-    def __init__(self, items: Optional[List[News]] = None):
-        super().__init__(items)
-        self._next_id = 0
-
     @property
     def model_class(self) -> Type[News]:
         return News
 
-    async def _create_model(self, form: NewsCreateForm, new_id: int) -> News:
+    async def create_default_mock_collection(self, items: List[News]) -> None:
+        async with self._create_session() as sess:
+            for item in items:
+                sess.add(OrmNews(id=item.id, title=item.title, text=item.text))
+            await sess.commit()
+
+    def _create_session(self) -> AsyncSession:
+        return TEST_DB.async_session()
+
+    def _get_db_model_class(self) -> Type[OrmNews]:
+        return OrmNews
+
+    def _create_select_stmt_by_id(self, item_id: int) -> Select[Tuple[OrmNews]]:
+        return Select(OrmNews).filter(OrmNews.id == item_id)
+
+    def _convert_db_item_to_schema(self, db_item: OrmNews) -> News:
         return News(
-            id=new_id,
-            title=form.title,
-            text=form.text
+            id=db_item.id,
+            title=db_item.title,
+            text=db_item.text,
         )
 
-    async def _update_model(self, model: News, form: NewsUpdateForm) -> News:
-        model.title = form.title
-        model.text = form.text
-        return model
+    def _create_from_schema(self, form: NewsCreateForm) -> OrmNews:
+        return OrmNews(
+            title=form.title,
+            text=form.text,
+        )
 
-    async def _generate_id(self) -> int:
-        self._next_id += 1
-        return self._next_id
+    def _update_from_schema(self, db_item: OrmNews, form: NewsUpdateForm) -> None:
+        db_item.title = form.title
+        db_item.text = form.text
 
-    def _get_id_filter_specification(self, item_id: int) -> SpecificationInterface[News, bool]:
-        return AttributeSpecification('id', item_id, Operator.E)
+    def _apply_default_filter(self, stmt: Select[Tuple[OrmNews]]) -> Select[Tuple[OrmNews]]:
+        return stmt
+
+    def _apply_default_order(self, stmt: Select[Tuple[OrmNews]]) -> Select[Tuple[OrmNews]]:
+        return stmt.order_by(OrmNews.id)
 
 
 class SqlAlchemyUserRepository(

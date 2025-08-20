@@ -82,7 +82,7 @@ class SqlAlchemyAttributeSpecification(
             if isinstance(self.attribute_value, list):
                 return model_attr.not_in(self.attribute_value)
             raise ValueError('Attribute value must be a list')
-        raise NotImplementedError(f'Unsupported operator: {self.operator}')
+        raise TypeError(f'Unsupported operator: {self.operator}')
 
     @staticmethod
     def _get_db_model_attr(model: TDbModel, attr_name: str) -> ColumnElement:

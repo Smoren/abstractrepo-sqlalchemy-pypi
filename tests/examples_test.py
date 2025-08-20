@@ -6,7 +6,7 @@ from abstractrepo.order import OrderDirection, OrderOptionsBuilder
 from abstractrepo.paging import PagingOptions, PageResolver
 
 from tests.fixtures.repo import (SqlAlchemyNewsRepository, SqlAlchemyUserRepository,
-                                 AsyncListBasedNewsRepository, AsyncSqlAlchemyUserRepository)
+                                 AsyncSqlAlchemyNewsRepository, AsyncSqlAlchemyUserRepository)
 from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm
 
 
@@ -50,7 +50,7 @@ def test_news_repo():
 
 @pytest.mark.asyncio
 async def test_news_repo_async():
-    repo = AsyncListBasedNewsRepository()
+    repo = AsyncSqlAlchemyNewsRepository()
     assert len(await repo.get_collection()) == 0
 
     model = await repo.create(NewsCreateForm(title='Title 1', text='Text 1'))
@@ -164,7 +164,7 @@ def test_news_repo_get_collection():
 
 @pytest.mark.asyncio
 async def test_news_repo_get_collection_async():
-    repo = AsyncListBasedNewsRepository()
+    repo = AsyncSqlAlchemyNewsRepository()
     assert len(await repo.get_collection()) == 0
 
     await repo.create(NewsCreateForm(title='First Topic 1', text='First topic text 1'))
