@@ -7,7 +7,7 @@ from abstractrepo.paging import PagingOptions, PageResolver
 
 from tests.fixtures.repo import (SqlAlchemyNewsRepository, ListBasedUserRepository,
                                  AsyncListBasedNewsRepository, AsyncListBasedUserRepository)
-from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm, News
+from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm
 
 
 def test_news_repo():

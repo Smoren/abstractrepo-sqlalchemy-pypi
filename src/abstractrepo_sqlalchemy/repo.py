@@ -50,7 +50,7 @@ class SqlAlchemyCrudRepository(
 
     def exists(self, item_id: TIdValueType) -> bool:
         with self._create_session() as sess:
-            return self._create_select_query_by_id(item_id, sess).exists().scalar()
+            return self._create_select_query_by_id(item_id, sess).count() > 0
 
     def create(self, form: TCreateSchema) -> TModel:
         with self._create_session() as sess:

@@ -6,14 +6,13 @@ from abstractrepo.specification import SpecificationInterface, Operator, Attribu
 from abstractrepo.repo import CrudRepositoryInterface, ListBasedCrudRepository, AsyncCrudRepositoryInterface, \
     AsyncListBasedCrudRepository, TUpdateSchema, TCreateSchema, TModel, TIdValueType
 
-from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from sqlalchemy.orm import Query, Session
 
 from abstractrepo_sqlalchemy.repo import SqlAlchemyCrudRepository
 from abstractrepo_sqlalchemy.types import TDbModel
+from tests.fixtures.db import TEST_DB
 
 from tests.fixtures.models import News, NewsCreateForm, NewsUpdateForm, User, UserCreateForm, UserUpdateForm, OrmNews
-from tests.fixtures.session import MyUnifiedAlchemyMagicMock
 
 
 class OrmCrudRepository(
@@ -21,15 +20,8 @@ class OrmCrudRepository(
     SqlAlchemyCrudRepository[TDbModel, TModel, TIdValueType, TCreateSchema, TUpdateSchema],
     abc.ABC,
 ):
-    _session: Session
-
-    def __init__(self):
-        super().__init__()
-        self._session = MyUnifiedAlchemyMagicMock()
-        self._session.commit()
-
     def _create_session(self) -> Session:
-        return self._session
+        return TEST_DB.session()
 
 
 class NewsRepositoryInterface(CrudRepositoryInterface[News, int, NewsCreateForm, NewsUpdateForm], abc.ABC):
@@ -55,6 +47,12 @@ class SqlAlchemyNewsRepository(
     @property
     def model_class(self) -> Type[News]:
         return News
+
+    def create_default_mock_collection(self, items: List[News]) -> None:
+        with self._create_session() as sess:
+            for item in items:
+                sess.add(OrmNews(id=item.id, title=item.title, text=item.text))
+            sess.commit()
 
     def _get_db_model_class(self) -> type[TDbModel]:
         return OrmNews
