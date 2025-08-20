@@ -5,7 +5,7 @@ from abstractrepo.specification import Operator, AttributeSpecification, AndSpec
 from abstractrepo.order import OrderDirection, OrderOptionsBuilder
 from abstractrepo.paging import PagingOptions, PageResolver
 
-from tests.fixtures.repo import (SqlAlchemyNewsRepository, ListBasedUserRepository,
+from tests.fixtures.repo import (SqlAlchemyNewsRepository, SqlAlchemyUserRepository,
                                  AsyncListBasedNewsRepository, AsyncSqlAlchemyUserRepository)
 from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm
 
@@ -251,7 +251,7 @@ async def test_news_repo_get_collection_async():
 
 
 def test_user_repo():
-    repo = ListBasedUserRepository()
+    repo = SqlAlchemyUserRepository()
     assert repo.count() == 0
     assert len(repo.get_collection()) == 0
 
