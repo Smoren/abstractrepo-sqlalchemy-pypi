@@ -1,4 +1,5 @@
 import pytest
+import pytest_asyncio
 
 from tests.fixtures.db import TEST_DB
 from tests.fixtures.models import Base
@@ -9,6 +10,13 @@ def setup_database():
     TEST_DB.create_tables()
     yield
     TEST_DB.drop_tables()
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def setup_async_database():
+    await TEST_DB.async_create_tables()
+    yield
+    await TEST_DB.async_drop_tables()
 
 
 @pytest.fixture(scope="function", autouse=True)

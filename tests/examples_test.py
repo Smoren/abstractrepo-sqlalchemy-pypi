@@ -6,7 +6,7 @@ from abstractrepo.order import OrderDirection, OrderOptionsBuilder
 from abstractrepo.paging import PagingOptions, PageResolver
 
 from tests.fixtures.repo import (SqlAlchemyNewsRepository, ListBasedUserRepository,
-                                 AsyncListBasedNewsRepository, AsyncListBasedUserRepository)
+                                 AsyncListBasedNewsRepository, AsyncSqlAlchemyUserRepository)
 from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm
 
 
@@ -278,7 +278,7 @@ def test_user_repo():
 
 @pytest.mark.asyncio
 async def test_user_repo_async():
-    repo = AsyncListBasedUserRepository()
+    repo = AsyncSqlAlchemyUserRepository()
     assert await repo.count() == 0
     assert len(await repo.get_collection()) == 0
 
