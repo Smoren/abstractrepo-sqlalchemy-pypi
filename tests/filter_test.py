@@ -67,3 +67,6 @@ async def test_filter_errors_async(items: List[News]):
 
     with pytest.raises(TypeError):
         await repo.get_collection(AttributeSpecification('id', 12, 'UnsupportedOperator'))
+
+    with pytest.raises(TypeError):
+        await repo.get_collection({})
