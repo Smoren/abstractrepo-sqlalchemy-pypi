@@ -45,7 +45,7 @@ class SqlAlchemyCrudRepository(
     def get_item(self, item_id: TIdValueType) -> TModel:
         with self._create_session() as sess:
             try:
-                db_item = self._create_select_query_by_id(item_id, sess).one()
+                db_item = self._apply_id_filter_condition(self._create_select_query(sess), item_id).one()
                 return self._convert_db_item_to_schema(db_item)
             except NoResultFound:
                 sess.rollback()
@@ -53,7 +53,7 @@ class SqlAlchemyCrudRepository(
 
     def exists(self, item_id: TIdValueType) -> bool:
         with self._create_session() as sess:
-            return self._create_select_query_by_id(item_id, sess).count() > 0
+            return self._apply_id_filter_condition(self._create_select_query(sess), item_id).count() > 0
 
     def create(self, form: TCreateSchema) -> TModel:
         with self._create_session() as sess:
@@ -70,7 +70,7 @@ class SqlAlchemyCrudRepository(
     def update(self, item_id: TIdValueType, form: TUpdateSchema) -> TModel:
         with self._create_session() as sess:
             try:
-                db_item = self._create_select_query_by_id(item_id, sess).one()
+                db_item = self._apply_id_filter_condition(self._create_select_query(sess), item_id).one()
                 self._update_from_schema(db_item, form)
                 sess.add(db_item)
                 sess.commit()
@@ -86,7 +86,7 @@ class SqlAlchemyCrudRepository(
     def delete(self, item_id: TIdValueType) -> TModel:
         with self._create_session() as sess:
             try:
-                db_item = self._create_select_query_by_id(item_id, sess).one()
+                db_item = self._apply_id_filter_condition(self._create_select_query(sess), item_id).one()
                 sess.delete(db_item)
                 sess.commit()
                 return self._convert_db_item_to_schema(db_item)
@@ -132,7 +132,7 @@ class SqlAlchemyCrudRepository(
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _create_select_query_by_id(self, item_id: TIdValueType, sess: Session) -> Query[Type[TDbModel]]:
+    def _apply_id_filter_condition(self, query: Query[Type[TDbModel]], item_id: TIdValueType) -> Query[Type[TDbModel]]:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -154,6 +154,9 @@ class SqlAlchemyCrudRepository(
     @abc.abstractmethod
     def _apply_default_order(self, query: Query[Type[TDbModel]]) -> Query[Type[TDbModel]]:
         raise NotImplementedError()
+
+    def _create_select_query(self, sess: Session) -> Query[Type[TDbModel]]:
+        return sess.query(self._get_db_model_class())
 
     def _check_violations(self, e: IntegrityError, form: object, action: str) -> None:
         error_msg = str(e.orig).lower()
@@ -196,7 +199,7 @@ class AsyncSqlAlchemyCrudRepository(
     async def get_item(self, item_id: TIdValueType) -> TModel:
         async with self._create_session() as sess:
             try:
-                stmt = self._create_select_stmt_by_id(item_id)
+                stmt = self._apply_id_filter_condition(self._create_select_stmt(), item_id)
                 result = await sess.execute(stmt)
                 db_item = result.scalar_one()
                 return self._convert_db_item_to_schema(db_item)
@@ -206,7 +209,7 @@ class AsyncSqlAlchemyCrudRepository(
 
     async def exists(self, item_id: TIdValueType) -> bool:
         async with self._create_session() as sess:
-            stmt = self._create_select_stmt_by_id(item_id)
+            stmt = self._apply_id_filter_condition(self._create_select_stmt(), item_id)
             result = await sess.execute(stmt)
             return result.scalar_one_or_none() is not None
 
@@ -225,7 +228,7 @@ class AsyncSqlAlchemyCrudRepository(
     async def update(self, item_id: TIdValueType, form: TUpdateSchema) -> TModel:
         async with self._create_session() as sess:
             try:
-                stmt = self._create_select_stmt_by_id(item_id)
+                stmt = self._apply_id_filter_condition(self._create_select_stmt(), item_id)
                 result = await sess.execute(stmt)
                 db_item = result.scalar_one()
                 self._update_from_schema(db_item, form)
@@ -242,7 +245,7 @@ class AsyncSqlAlchemyCrudRepository(
     async def delete(self, item_id: TIdValueType) -> TModel:
         async with self._create_session() as sess:
             try:
-                stmt = self._create_select_stmt_by_id(item_id)
+                stmt = self._apply_id_filter_condition(self._create_select_stmt(), item_id)
                 result = await sess.execute(stmt)
                 db_item = result.scalar_one()
                 await sess.delete(db_item)
@@ -290,7 +293,7 @@ class AsyncSqlAlchemyCrudRepository(
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _create_select_stmt_by_id(self, item_id: TIdValueType) -> Select[Tuple[TDbModel]]:
+    def _apply_id_filter_condition(self, stmt: Select[Tuple[TDbModel]], item_id: TIdValueType) -> Select[Tuple[TDbModel]]:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -312,6 +315,9 @@ class AsyncSqlAlchemyCrudRepository(
     @abc.abstractmethod
     def _apply_default_order(self, stmt: Select[Tuple[TDbModel]]) -> Select[Tuple[TDbModel]]:
         raise NotImplementedError()
+
+    def _create_select_stmt(self) -> Select[Tuple[TDbModel]]:
+        return Select(self._get_db_model_class())
 
     def _check_violations(self, e: IntegrityError, form: object, action: str) -> None:
         error_msg = str(e.orig).lower()

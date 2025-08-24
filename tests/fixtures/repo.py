@@ -1,10 +1,10 @@
 import abc
-from typing import Optional, List, Type, Generic, Tuple
+from typing import List, Type, Generic, Tuple
 
-from abstractrepo.exceptions import ItemNotFoundException, UniqueViolationException
-from abstractrepo.specification import SpecificationInterface, Operator, AttributeSpecification
-from abstractrepo.repo import CrudRepositoryInterface, ListBasedCrudRepository, AsyncCrudRepositoryInterface, \
-    AsyncListBasedCrudRepository, TUpdateSchema, TCreateSchema, TModel, TIdValueType
+from abstractrepo.exceptions import ItemNotFoundException
+from abstractrepo.specification import AttributeSpecification
+from abstractrepo.repo import CrudRepositoryInterface, AsyncCrudRepositoryInterface, \
+    TUpdateSchema, TCreateSchema, TModel, TIdValueType
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -70,8 +70,8 @@ class SqlAlchemyNewsRepository(
     def _get_db_model_class(self) -> type[OrmNews]:
         return OrmNews
 
-    def _create_select_query_by_id(self, item_id: int, sess: Session) -> Query[Type[OrmNews]]:
-        return sess.query(OrmNews).filter(OrmNews.id == item_id)
+    def _apply_id_filter_condition(self, query: Query[Type[OrmNews]], item_id: int) -> Query[Type[OrmNews]]:
+        return query.filter(OrmNews.id == item_id)
 
     def _convert_db_item_to_schema(self, db_item: OrmNews) -> News:
         return News(
@@ -119,8 +119,8 @@ class AsyncSqlAlchemyNewsRepository(
     def _get_db_model_class(self) -> Type[OrmNews]:
         return OrmNews
 
-    def _create_select_stmt_by_id(self, item_id: int) -> Select[Tuple[OrmNews]]:
-        return Select(OrmNews).filter(OrmNews.id == item_id)
+    def _apply_id_filter_condition(self, stmt: Select[Tuple[TDbModel]], item_id: int) -> Select[Tuple[OrmNews]]:
+        return stmt.filter(OrmNews.id == item_id)
 
     def _convert_db_item_to_schema(self, db_item: OrmNews) -> News:
         return News(
@@ -169,8 +169,8 @@ class SqlAlchemyUserRepository(
     def _get_db_model_class(self) -> Type[OrmUser]:
         return OrmUser
 
-    def _create_select_query_by_id(self, item_id: int, sess: Session) -> Query[Type[OrmUser]]:
-        return sess.query(OrmUser).filter(OrmUser.id == item_id)
+    def _apply_id_filter_condition(self, query: Query[Type[OrmUser]], item_id: int) -> Query[Type[OrmUser]]:
+        return query.filter(OrmUser.id == item_id)
 
     def _convert_db_item_to_schema(self, db_item: OrmUser) -> User:
         return User(
@@ -222,8 +222,8 @@ class AsyncSqlAlchemyUserRepository(
     def _get_db_model_class(self) -> Type[OrmUser]:
         return OrmUser
 
-    def _create_select_stmt_by_id(self, item_id: int) -> Select[Tuple[OrmUser]]:
-        return Select(OrmUser).where(OrmUser.id == item_id)
+    def _apply_id_filter_condition(self, stmt: Select[Tuple[TDbModel]], item_id: int) -> Select[Tuple[OrmUser]]:
+        return stmt.where(OrmUser.id == item_id)
 
     def _convert_db_item_to_schema(self, db_item: OrmUser) -> TModel:
         return User(
