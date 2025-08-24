@@ -30,8 +30,8 @@ class UserCreateForm(BaseModel):
 
 
 class UserUpdateForm(BaseModel):
-    display_name: Optional[str]
-    username: Optional[str]
+    display_name: Optional[str] = None
+    username: Optional[str] = None
 
 
 class News(BaseModel):
@@ -58,4 +58,4 @@ class NewsCreateForm(BaseModel):
 
 class NewsUpdateForm(BaseModel):
     title: str
-    text: Optional[str]
+    text: Optional[str] = None

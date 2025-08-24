@@ -223,7 +223,7 @@ class AsyncSqlAlchemyUserRepository(
         return OrmUser
 
     def _create_select_stmt_by_id(self, item_id: int) -> Select[Tuple[OrmUser]]:
-        return Select(OrmNews).where(OrmNews.id == item_id)
+        return Select(OrmUser).where(OrmUser.id == item_id)
 
     def _convert_db_item_to_schema(self, db_item: OrmUser) -> TModel:
         return User(

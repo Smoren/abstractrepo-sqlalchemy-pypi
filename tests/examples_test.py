@@ -295,6 +295,14 @@ async def test_user_repo_async():
     assert await repo.count() == 1
     assert len(await repo.get_collection()) == 1
 
+    with pytest.raises(ItemNotFoundException):
+        await repo.get_item(2)
+
+    user2 = await repo.create(UserCreateForm(username='user2', password='pass2', display_name='User 2'))
+    assert user2.id == 2
+    assert await repo.count() == 2
+    assert len(await repo.get_collection()) == 2
+
     user1 = await repo.get_by_username(user1.username)
     assert user1.id == 1
     assert user1.username == 'user1'
@@ -302,10 +310,10 @@ async def test_user_repo_async():
     assert user1.display_name == 'User 1'
 
     with pytest.raises(ItemNotFoundException):
-        await repo.get_item(2)
+        await repo.get_by_username('user3')
 
-    with pytest.raises(ItemNotFoundException):
-        await repo.get_by_username('user2')
+    with pytest.raises(UniqueViolationException):
+        await repo.update(user2.id, UserUpdateForm(username='user1', display_name='Duplicate User 1'))
 
     with pytest.raises(UniqueViolationException):
         await repo.create(UserCreateForm(username='user1', password='pass2', display_name='Duplicate User 1'))
@@ -324,4 +332,23 @@ def test_relations():
     assert news1.author_id == user1.id
     assert news2.author_id == user2.id
 
+    with pytest.raises(RelationViolationException):
+        news_repo.create(NewsCreateForm(title='News 3', text='News 3 text', author_id=1000))
 
+
+@pytest.mark.asyncio
+async def test_relations_async():
+    user_repo = AsyncSqlAlchemyUserRepository()
+    news_repo = AsyncSqlAlchemyNewsRepository()
+
+    user1 = await user_repo.create(UserCreateForm(username='user1', password='pass1', display_name='User 1'))
+    user2 = await user_repo.create(UserCreateForm(username='user2', password='pass2', display_name='User 2'))
+
+    news1 = await news_repo.create(NewsCreateForm(title='News 1', text='News 1 text', author_id=user1.id))
+    news2 = await news_repo.create(NewsCreateForm(title='News 2', text='News 2 text', author_id=user2.id))
+
+    assert news1.author_id == user1.id
+    assert news2.author_id == user2.id
+
+    with pytest.raises(RelationViolationException):
+        await news_repo.create(NewsCreateForm(title='News 3', text='News 3 text', author_id=1000))
