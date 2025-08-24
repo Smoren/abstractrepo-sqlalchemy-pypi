@@ -1,4 +1,4 @@
-__version__ = "0.2.0"
+__version__ = "1.0.0"
 
 import abstractrepo_sqlalchemy.repo
 import abstractrepo_sqlalchemy.order

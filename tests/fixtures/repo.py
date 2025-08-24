@@ -14,8 +14,8 @@ from abstractrepo_sqlalchemy.repo import SqlAlchemyCrudRepository, AsyncSqlAlche
 from abstractrepo_sqlalchemy.types import TDbModel
 from tests.fixtures.db import TEST_DB
 
-from tests.fixtures.models import News, NewsCreateForm, NewsUpdateForm, User, UserCreateForm, UserUpdateForm, OrmNews, \
-    OrmUser
+from tests.fixtures.models import News, NewsCreateForm, NewsUpdateForm, User, UserCreateForm, UserUpdateForm, NewsTable, \
+    UserTable
 
 
 class OrmCrudRepository(
@@ -54,7 +54,7 @@ class AsyncUserRepositoryInterface(AsyncCrudRepositoryInterface[User, int, UserC
 
 
 class SqlAlchemyNewsRepository(
-    OrmCrudRepository[OrmNews, News, int, NewsCreateForm, NewsUpdateForm],
+    OrmCrudRepository[NewsTable, News, int, NewsCreateForm, NewsUpdateForm],
     NewsRepositoryInterface,
 ):
     @property
@@ -64,16 +64,17 @@ class SqlAlchemyNewsRepository(
     def create_default_mock_collection(self, items: List[News]) -> None:
         with self._create_session() as sess:
             for item in items:
-                sess.add(OrmNews(id=item.id, title=item.title, text=item.text))
+                sess.add(NewsTable(id=item.id, title=item.title, text=item.text))
             sess.commit()
 
-    def _get_db_model_class(self) -> type[OrmNews]:
-        return OrmNews
+    @property
+    def _db_model_class(self) -> type[NewsTable]:
+        return NewsTable
 
-    def _apply_id_filter_condition(self, query: Query[Type[OrmNews]], item_id: int) -> Query[Type[OrmNews]]:
-        return query.filter(OrmNews.id == item_id)
+    def _apply_id_filter_condition(self, query: Query[Type[NewsTable]], item_id: int) -> Query[Type[NewsTable]]:
+        return query.filter(NewsTable.id == item_id)
 
-    def _convert_db_item_to_schema(self, db_item: OrmNews) -> News:
+    def _convert_db_item_to_model(self, db_item: NewsTable) -> News:
         return News(
             id=db_item.id,
             author_id=db_item.author_id,
@@ -81,26 +82,26 @@ class SqlAlchemyNewsRepository(
             text=db_item.text,
         )
 
-    def _create_from_schema(self, form: NewsCreateForm) -> OrmNews:
-        return OrmNews(
+    def _create_db_item(self, form: NewsCreateForm) -> NewsTable:
+        return NewsTable(
             author_id=form.author_id,
             title=form.title,
             text=form.text,
         )
 
-    def _update_from_schema(self, db_item: OrmNews, form: NewsUpdateForm) -> None:
+    def _update_db_item(self, db_item: NewsTable, form: NewsUpdateForm) -> None:
         db_item.title = form.title
         db_item.text = form.text
 
-    def _apply_default_filter(self, query: Query[Type[OrmNews]]) -> Query[Type[OrmNews]]:
+    def _apply_default_filter(self, query: Query[Type[NewsTable]]) -> Query[Type[NewsTable]]:
         return query
 
-    def _apply_default_order(self, query: Query[Type[OrmNews]]) -> Query[Type[OrmNews]]:
-        return query.order_by(OrmNews.id)
+    def _apply_default_order(self, query: Query[Type[NewsTable]]) -> Query[Type[NewsTable]]:
+        return query.order_by(NewsTable.id)
 
 
 class AsyncSqlAlchemyNewsRepository(
-    AsyncSqlAlchemyCrudRepository[OrmNews, News, int, NewsCreateForm, NewsUpdateForm],
+    AsyncSqlAlchemyCrudRepository[NewsTable, News, int, NewsCreateForm, NewsUpdateForm],
     AsyncNewsRepositoryInterface,
 ):
     @property
@@ -110,19 +111,20 @@ class AsyncSqlAlchemyNewsRepository(
     async def create_default_mock_collection(self, items: List[News]) -> None:
         async with self._create_session() as sess:
             for item in items:
-                sess.add(OrmNews(id=item.id, title=item.title, text=item.text))
+                sess.add(NewsTable(id=item.id, title=item.title, text=item.text))
             await sess.commit()
 
     def _create_session(self) -> AsyncSession:
         return TEST_DB.async_session()
 
-    def _get_db_model_class(self) -> Type[OrmNews]:
-        return OrmNews
+    @property
+    def _db_model_class(self) -> Type[NewsTable]:
+        return NewsTable
 
-    def _apply_id_filter_condition(self, stmt: Select[Tuple[TDbModel]], item_id: int) -> Select[Tuple[OrmNews]]:
-        return stmt.filter(OrmNews.id == item_id)
+    def _apply_id_filter_condition(self, stmt: Select[Tuple[TDbModel]], item_id: int) -> Select[Tuple[NewsTable]]:
+        return stmt.filter(NewsTable.id == item_id)
 
-    def _convert_db_item_to_schema(self, db_item: OrmNews) -> News:
+    def _convert_db_item_to_model(self, db_item: NewsTable) -> News:
         return News(
             id=db_item.id,
             author_id=db_item.author_id,
@@ -130,26 +132,26 @@ class AsyncSqlAlchemyNewsRepository(
             text=db_item.text,
         )
 
-    def _create_from_schema(self, form: NewsCreateForm) -> OrmNews:
-        return OrmNews(
+    def _create_db_item(self, form: NewsCreateForm) -> NewsTable:
+        return NewsTable(
             author_id=form.author_id,
             title=form.title,
             text=form.text,
         )
 
-    def _update_from_schema(self, db_item: OrmNews, form: NewsUpdateForm) -> None:
+    def _update_db_item(self, db_item: NewsTable, form: NewsUpdateForm) -> None:
         db_item.title = form.title
         db_item.text = form.text
 
-    def _apply_default_filter(self, stmt: Select[Tuple[OrmNews]]) -> Select[Tuple[OrmNews]]:
+    def _apply_default_filter(self, stmt: Select[Tuple[NewsTable]]) -> Select[Tuple[NewsTable]]:
         return stmt
 
-    def _apply_default_order(self, stmt: Select[Tuple[OrmNews]]) -> Select[Tuple[OrmNews]]:
-        return stmt.order_by(OrmNews.id)
+    def _apply_default_order(self, stmt: Select[Tuple[NewsTable]]) -> Select[Tuple[NewsTable]]:
+        return stmt.order_by(NewsTable.id)
 
 
 class SqlAlchemyUserRepository(
-    OrmCrudRepository[OrmUser, User, int, UserCreateForm, UserUpdateForm],
+    OrmCrudRepository[UserTable, User, int, UserCreateForm, UserUpdateForm],
     UserRepositoryInterface,
 ):
     def get_by_username(self, username: str) -> User:
@@ -166,13 +168,14 @@ class SqlAlchemyUserRepository(
     def _username_exists(self, username: str) -> bool:
         return self.count(AttributeSpecification('username', username)) > 0
 
-    def _get_db_model_class(self) -> Type[OrmUser]:
-        return OrmUser
+    @property
+    def _db_model_class(self) -> Type[UserTable]:
+        return UserTable
 
-    def _apply_id_filter_condition(self, query: Query[Type[OrmUser]], item_id: int) -> Query[Type[OrmUser]]:
-        return query.filter(OrmUser.id == item_id)
+    def _apply_id_filter_condition(self, query: Query[Type[UserTable]], item_id: int) -> Query[Type[UserTable]]:
+        return query.filter(UserTable.id == item_id)
 
-    def _convert_db_item_to_schema(self, db_item: OrmUser) -> User:
+    def _convert_db_item_to_model(self, db_item: UserTable) -> User:
         return User(
             id=db_item.id,
             username=db_item.username,
@@ -180,28 +183,28 @@ class SqlAlchemyUserRepository(
             display_name=db_item.display_name,
         )
 
-    def _create_from_schema(self, form: UserCreateForm) -> OrmUser:
-        return OrmUser(
+    def _create_db_item(self, form: UserCreateForm) -> UserTable:
+        return UserTable(
             username=form.username,
             password=form.password,
             display_name=form.display_name,
         )
 
-    def _update_from_schema(self, db_item: OrmUser, form: UserUpdateForm) -> None:
+    def _update_db_item(self, db_item: UserTable, form: UserUpdateForm) -> None:
         if form.display_name is not None:
             db_item.display_name = form.display_name
         if form.username is not None:
             db_item.username = form.username
 
-    def _apply_default_filter(self, query: Query[Type[OrmUser]]) -> Query[Type[OrmUser]]:
+    def _apply_default_filter(self, query: Query[Type[UserTable]]) -> Query[Type[UserTable]]:
         return query
 
-    def _apply_default_order(self, query: Query[Type[OrmUser]]) -> Query[Type[OrmUser]]:
-        return query.order_by(OrmUser.id)
+    def _apply_default_order(self, query: Query[Type[UserTable]]) -> Query[Type[UserTable]]:
+        return query.order_by(UserTable.id)
 
 
 class AsyncSqlAlchemyUserRepository(
-    AsyncOrmCrudRepository[OrmUser, User, int, UserCreateForm, UserUpdateForm],
+    AsyncOrmCrudRepository[UserTable, User, int, UserCreateForm, UserUpdateForm],
     AsyncUserRepositoryInterface,
 ):
     async def get_by_username(self, username: str) -> User:
@@ -219,13 +222,14 @@ class AsyncSqlAlchemyUserRepository(
         count = await self.count(AttributeSpecification('username', username))
         return count > 0
 
-    def _get_db_model_class(self) -> Type[OrmUser]:
-        return OrmUser
+    @property
+    def _db_model_class(self) -> Type[UserTable]:
+        return UserTable
 
-    def _apply_id_filter_condition(self, stmt: Select[Tuple[TDbModel]], item_id: int) -> Select[Tuple[OrmUser]]:
-        return stmt.where(OrmUser.id == item_id)
+    def _apply_id_filter_condition(self, stmt: Select[Tuple[UserTable]], item_id: int) -> Select[Tuple[UserTable]]:
+        return stmt.where(UserTable.id == item_id)
 
-    def _convert_db_item_to_schema(self, db_item: OrmUser) -> TModel:
+    def _convert_db_item_to_model(self, db_item: UserTable) -> User:
         return User(
             id=db_item.id,
             username=db_item.username,
@@ -233,21 +237,21 @@ class AsyncSqlAlchemyUserRepository(
             display_name=db_item.display_name,
         )
 
-    def _create_from_schema(self, form: UserCreateForm) -> OrmUser:
-        return OrmUser(
+    def _create_db_item(self, form: UserCreateForm) -> UserTable:
+        return UserTable(
             username=form.username,
             password=form.password,
             display_name=form.display_name,
         )
 
-    def _update_from_schema(self, db_item: int, form: UserUpdateForm) -> None:
+    def _update_db_item(self, db_item: int, form: UserUpdateForm) -> None:
         if form.display_name is not None:
             db_item.display_name = form.display_name
         if form.username is not None:
             db_item.username = form.username
 
-    def _apply_default_filter(self, stmt: Select[Tuple[OrmUser]]) -> Select[Tuple[OrmUser]]:
+    def _apply_default_filter(self, stmt: Select[Tuple[UserTable]]) -> Select[Tuple[UserTable]]:
         return stmt
 
-    def _apply_default_order(self, stmt: Select[Tuple[OrmUser]]) -> Select[Tuple[OrmUser]]:
-        return stmt.order_by(OrmUser.id)
+    def _apply_default_order(self, stmt: Select[Tuple[UserTable]]) -> Select[Tuple[UserTable]]:
+        return stmt.order_by(UserTable.id)
