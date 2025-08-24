@@ -7,7 +7,7 @@
 [![Actions Status](https://github.com/Smoren/abstractrepo-sqlalchemy-pypi/workflows/Test/badge.svg)](https://github.com/Smoren/abstractrepo-sqlalchemy-pypi/actions)
 [![License](https://img.shields.io/github/license/Smoren/abstractrepo-sqlalchemy-pypi)](https://github.com/Smoren/abstractrepo-sqlalchemy-pypi/blob/master/LICENSE)
 
-The `AbstractRepo SQLAlchemy` library provides a concrete implementation of the [AbstractRepo](https://github.com/Smoren/abstractrepo) 
+The `AbstractRepo SQLAlchemy` library provides a concrete implementation of the [AbstractRepo](https://github.com/Smoren/abstractrepo-pypi) 
 interfaces for [SQLAlchemy](https://www.sqlalchemy.org/), a popular SQL toolkit and Object-Relational Mapper (ORM) for Python. It seamlessly integrates 
 the abstract repository pattern with SQLAlchemy's powerful features, enabling developers to build robust and maintainable data access layers.
 
@@ -290,7 +290,7 @@ async def custom_async_code():
 
 ## API Reference
 
-For the full API reference, see the [AbstractRepo documentation](https://github.com/Smoren/abstractrepo).
+For the full API reference, see the [AbstractRepo documentation](https://github.com/Smoren/abstractrepo-pypi).
 
 ## Dependencies
 
