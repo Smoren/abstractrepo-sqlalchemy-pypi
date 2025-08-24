@@ -1,34 +1,10 @@
 from typing import Optional
 
 from pydantic import BaseModel
-from sqlalchemy import Column, String, Integer, TEXT
+from sqlalchemy import Column, String, Integer, TEXT, ForeignKey
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
-
-
-class News(BaseModel):
-    id: int
-    title: str
-    text: Optional[str]
-
-
-class OrmNews(Base):
-    __tablename__ = "news"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(255), nullable=False)
-    text = Column(TEXT, nullable=True)
-
-
-class NewsCreateForm(BaseModel):
-    title: str
-    text: Optional[str]
-
-
-class NewsUpdateForm(BaseModel):
-    title: str
-    text: Optional[str]
 
 
 class User(BaseModel):
@@ -56,3 +32,30 @@ class UserCreateForm(BaseModel):
 class UserUpdateForm(BaseModel):
     display_name: Optional[str]
     username: Optional[str]
+
+
+class News(BaseModel):
+    id: int
+    author_id: Optional[int] = None
+    title: str
+    text: Optional[str] = None
+
+
+class OrmNews(Base):
+    __tablename__ = "news"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    author_id = Column(Integer, ForeignKey("user.id"), nullable=True)
+    title = Column(String(255), nullable=False)
+    text = Column(TEXT, nullable=True)
+
+
+class NewsCreateForm(BaseModel):
+    title: str
+    text: Optional[str] = None
+    author_id: Optional[int] = None
+
+
+class NewsUpdateForm(BaseModel):
+    title: str
+    text: Optional[str]

@@ -20,7 +20,7 @@ def data_provider_for_news_collection(size: int, with_no_text_item: bool = False
     yield result
 
 
-def data_provider_for_news_collection_async(size: int, with_no_text_item: bool = False) -> Generator[AsyncNewsRepositoryInterface, None, None]:
+def data_provider_for_news_collection_async(size: int, with_no_text_item: bool = False) -> Generator[List[News], None, None]:
     # Helper function to run async generator to completion
     async def collect():
         next_id = 1

@@ -1,6 +1,6 @@
 import pytest
 
-from abstractrepo.exceptions import ItemNotFoundException, UniqueViolationException
+from abstractrepo.exceptions import ItemNotFoundException, UniqueViolationException, RelationViolationException
 from abstractrepo.specification import Operator, AttributeSpecification, AndSpecification, OrSpecification
 from abstractrepo.order import OrderDirection, OrderOptionsBuilder
 from abstractrepo.paging import PagingOptions, PageResolver
@@ -309,3 +309,19 @@ async def test_user_repo_async():
 
     with pytest.raises(UniqueViolationException):
         await repo.create(UserCreateForm(username='user1', password='pass2', display_name='Duplicate User 1'))
+
+
+def test_relations():
+    user_repo = SqlAlchemyUserRepository()
+    news_repo = SqlAlchemyNewsRepository()
+
+    user1 = user_repo.create(UserCreateForm(username='user1', password='pass1', display_name='User 1'))
+    user2 = user_repo.create(UserCreateForm(username='user2', password='pass2', display_name='User 2'))
+
+    news1 = news_repo.create(NewsCreateForm(title='News 1', text='News 1 text', author_id=user1.id))
+    news2 = news_repo.create(NewsCreateForm(title='News 2', text='News 2 text', author_id=user2.id))
+
+    assert news1.author_id == user1.id
+    assert news2.author_id == user2.id
+
+

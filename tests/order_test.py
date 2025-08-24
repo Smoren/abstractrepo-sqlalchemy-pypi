@@ -6,6 +6,7 @@ import pytest
 from abstractrepo.order import OrderOptions
 from tests.fixtures.repo import SqlAlchemyNewsRepository, AsyncSqlAlchemyNewsRepository
 from tests.fixtures.models import News
+from tests.fixtures.utils import dumps
 from tests.providers.order import data_provider_for_news_order
 
 
@@ -15,7 +16,7 @@ def test_order(test_case: Tuple[List[News], OrderOptions, List[News]]):
     repo = SqlAlchemyNewsRepository()
     repo.create_default_mock_collection(input_news)
     actual = repo.get_collection(order_options=order_options)
-    assert pickle.dumps(actual) == pickle.dumps(expected)
+    assert dumps(actual) == dumps(expected)
 
 
 @pytest.mark.asyncio
@@ -25,4 +26,4 @@ async def test_order_async(test_case: Tuple[List[News], OrderOptions, List[News]
     repo = AsyncSqlAlchemyNewsRepository()
     await repo.create_default_mock_collection(input_news)
     actual = await repo.get_collection(order_options=order_options)
-    assert pickle.dumps(actual) == pickle.dumps(expected)
+    assert dumps(actual) == dumps(expected)

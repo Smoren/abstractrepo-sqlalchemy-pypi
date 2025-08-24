@@ -6,6 +6,7 @@ import pytest
 from abstractrepo.specification import SpecificationInterface, AttributeSpecification, Operator
 from tests.fixtures.models import News
 from tests.fixtures.repo import SqlAlchemyNewsRepository, AsyncSqlAlchemyNewsRepository
+from tests.fixtures.utils import dumps
 from tests.providers.filter import data_provider_for_news_filter, data_provider_for_news_collection, \
     data_provider_for_news_collection_async
 
@@ -18,7 +19,7 @@ def test_filter(items: List[News], test_case: Tuple[SpecificationInterface[News,
     repo.create_default_mock_collection(items)
     actual = repo.get_collection(filter_spec=filter_spec)
     actual_count = repo.count(filter_spec=filter_spec)
-    assert pickle.dumps(actual) == pickle.dumps(expected)
+    assert dumps(actual) == dumps(expected)
     assert actual_count == len(expected)
 
 
@@ -31,7 +32,7 @@ async def test_filter_async(items: List[News], test_case: Tuple[SpecificationInt
     await repo.create_default_mock_collection(items)
     actual = await repo.get_collection(filter_spec=filter_spec)
     actual_count = await repo.count(filter_spec=filter_spec)
-    assert pickle.dumps(actual) == pickle.dumps(expected)
+    assert dumps(actual) == dumps(expected)
     assert actual_count == len(expected)
 
 

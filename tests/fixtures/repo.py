@@ -76,12 +76,14 @@ class SqlAlchemyNewsRepository(
     def _convert_db_item_to_schema(self, db_item: OrmNews) -> News:
         return News(
             id=db_item.id,
+            author_id=db_item.author_id,
             title=db_item.title,
             text=db_item.text,
         )
 
     def _create_from_schema(self, form: NewsCreateForm) -> OrmNews:
         return OrmNews(
+            author_id=form.author_id,
             title=form.title,
             text=form.text,
         )
@@ -123,12 +125,14 @@ class AsyncSqlAlchemyNewsRepository(
     def _convert_db_item_to_schema(self, db_item: OrmNews) -> News:
         return News(
             id=db_item.id,
+            author_id=db_item.author_id,
             title=db_item.title,
             text=db_item.text,
         )
 
     def _create_from_schema(self, form: NewsCreateForm) -> OrmNews:
         return OrmNews(
+            author_id=form.author_id,
             title=form.title,
             text=form.text,
         )
@@ -237,7 +241,10 @@ class AsyncSqlAlchemyUserRepository(
         )
 
     def _update_from_schema(self, db_item: int, form: UserUpdateForm) -> None:
-        db_item.display_name = form.display_name
+        if form.display_name is not None:
+            db_item.display_name = form.display_name
+        if form.username is not None:
+            db_item.username = form.username
 
     def _apply_default_filter(self, stmt: Select[Tuple[OrmUser]]) -> Select[Tuple[OrmUser]]:
         return stmt
