@@ -129,7 +129,7 @@ class SqlAlchemyUserRepository(
     def _apply_default_order(self, query: Query[UserTable]) -> Query[UserTable]:
         return query.order_by(UserTable.id)
 
-    def _create_session(self) -> Session:
+    def _create_session(self) -> sessionmaker[Session]:
         return DbSession()
 
 # Initialize the repository
@@ -257,7 +257,7 @@ class AsyncSqlAlchemyUserRepository(
     def _apply_default_order(self, stmt: Select[Tuple[UserTable]]) -> Select[Tuple[UserTable]]:
         return stmt.order_by(UserTable.id)
 
-    def _create_session(self) -> AsyncSession:
+    def _create_session(self) -> async_sessionmaker[AsyncSession]:
         return AsyncDbSession()
 
 async def custom_async_code():
