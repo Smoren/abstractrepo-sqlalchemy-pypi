@@ -7,7 +7,7 @@ from abstractrepo.paging import PagingOptions, PageResolver
 
 from tests.fixtures.repo import (SqlAlchemyNewsRepository, SqlAlchemyUserRepository,
                                  AsyncSqlAlchemyNewsRepository, AsyncSqlAlchemyUserRepository)
-from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm
+from tests.fixtures.models import NewsCreateForm, NewsUpdateForm, UserCreateForm, UserUpdateForm
 
 
 def test_news_repo():
@@ -260,6 +260,14 @@ def test_user_repo():
     assert repo.count() == 1
     assert len(repo.get_collection()) == 1
 
+    with pytest.raises(ItemNotFoundException):
+        repo.get_item(2)
+
+    user2 = repo.create(UserCreateForm(username='user2', password='pass2', display_name='User 2'))
+    assert user2.id == 2
+    assert repo.count() == 2
+    assert len(repo.get_collection()) == 2
+
     user1 = repo.get_by_username(user1.username)
     assert user1.id == 1
     assert user1.username == 'user1'
@@ -267,10 +275,10 @@ def test_user_repo():
     assert user1.display_name == 'User 1'
 
     with pytest.raises(ItemNotFoundException):
-        repo.get_item(2)
+        repo.get_by_username('user3')
 
-    with pytest.raises(ItemNotFoundException):
-        repo.get_by_username('user2')
+    with pytest.raises(UniqueViolationException):
+        repo.update(user2.id, UserUpdateForm(username='user1', display_name='Duplicate User 1'))
 
     with pytest.raises(UniqueViolationException):
         repo.create(UserCreateForm(username='user1', password='pass2', display_name='Duplicate User 1'))

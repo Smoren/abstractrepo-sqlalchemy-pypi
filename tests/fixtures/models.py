@@ -54,4 +54,5 @@ class UserCreateForm(BaseModel):
 
 
 class UserUpdateForm(BaseModel):
-    display_name: str
+    display_name: Optional[str]
+    username: Optional[str]

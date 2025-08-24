@@ -184,7 +184,10 @@ class SqlAlchemyUserRepository(
         )
 
     def _update_from_schema(self, db_item: OrmUser, form: UserUpdateForm) -> None:
-        db_item.display_name = form.display_name
+        if form.display_name is not None:
+            db_item.display_name = form.display_name
+        if form.username is not None:
+            db_item.username = form.username
 
     def _apply_default_filter(self, query: Query[Type[OrmUser]]) -> Query[Type[OrmUser]]:
         return query

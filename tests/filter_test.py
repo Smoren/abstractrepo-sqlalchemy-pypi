@@ -49,6 +49,9 @@ def test_filter_errors(items: List[News]):
     with pytest.raises(TypeError):
         repo.get_collection(AttributeSpecification('id', 12, 'UnsupportedOperator'))
 
+    with pytest.raises(TypeError):
+        repo.get_collection({})
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("items", data_provider_for_news_collection_async(100))
