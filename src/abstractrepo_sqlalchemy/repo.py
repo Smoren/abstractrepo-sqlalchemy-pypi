@@ -2,8 +2,8 @@ from typing import List, Generic, Optional, Type, Tuple
 import abc
 
 from sqlalchemy import select, Select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.orm import Query, Session, sessionmaker
 from sqlalchemy.exc import NoResultFound, IntegrityError
 
 from abstractrepo.exceptions import ItemNotFoundException, UniqueViolationException, RelationViolationException
@@ -124,7 +124,7 @@ class SqlAlchemyCrudRepository(
         return query
 
     @abc.abstractmethod
-    def _create_session(self) -> Session:
+    def _create_session(self) -> sessionmaker[Session]:
         raise NotImplementedError()
 
     @property
@@ -286,7 +286,7 @@ class AsyncSqlAlchemyCrudRepository(
         return stmt
 
     @abc.abstractmethod
-    def _create_session(self) -> AsyncSession:
+    def _create_session(self) -> async_sessionmaker[AsyncSession]:
         raise NotImplementedError()
 
     @property

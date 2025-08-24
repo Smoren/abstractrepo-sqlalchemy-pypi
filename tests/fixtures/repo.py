@@ -6,9 +6,9 @@ from abstractrepo.specification import AttributeSpecification
 from abstractrepo.repo import CrudRepositoryInterface, AsyncCrudRepositoryInterface, \
     TUpdateSchema, TCreateSchema, TModel, TIdValueType
 from sqlalchemy import Select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import Query, Session, sessionmaker
 
 from abstractrepo_sqlalchemy.repo import SqlAlchemyCrudRepository, AsyncSqlAlchemyCrudRepository
 from abstractrepo_sqlalchemy.types import TDbModel
@@ -23,7 +23,7 @@ class OrmCrudRepository(
     SqlAlchemyCrudRepository[TDbModel, TModel, TIdValueType, TCreateSchema, TUpdateSchema],
     abc.ABC,
 ):
-    def _create_session(self) -> Session:
+    def _create_session(self) -> sessionmaker[Session]:
         return TEST_DB.session()
 
 
@@ -32,7 +32,7 @@ class AsyncOrmCrudRepository(
     AsyncSqlAlchemyCrudRepository[TDbModel, TModel, TIdValueType, TCreateSchema, TUpdateSchema],
     abc.ABC,
 ):
-    def _create_session(self) -> AsyncSession:
+    def _create_session(self) -> async_sessionmaker[AsyncSession]:
         return TEST_DB.async_session()
 
 
@@ -101,7 +101,7 @@ class SqlAlchemyNewsRepository(
 
 
 class AsyncSqlAlchemyNewsRepository(
-    AsyncSqlAlchemyCrudRepository[NewsTable, News, int, NewsCreateForm, NewsUpdateForm],
+    AsyncOrmCrudRepository[NewsTable, News, int, NewsCreateForm, NewsUpdateForm],
     AsyncNewsRepositoryInterface,
 ):
     async def create_default_mock_collection(self, items: List[News]) -> None:
@@ -113,9 +113,6 @@ class AsyncSqlAlchemyNewsRepository(
     @property
     def model_class(self) -> Type[News]:
         return News
-
-    def _create_session(self) -> AsyncSession:
-        return TEST_DB.async_session()
 
     @property
     def _db_model_class(self) -> Type[NewsTable]:
