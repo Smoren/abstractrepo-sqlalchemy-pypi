@@ -164,7 +164,7 @@ class SqlAlchemyCrudRepository(
             raise UniqueViolationException(self.model_class, action, form)
         elif "foreign" in error_msg or "reference" in error_msg:
             raise RelationViolationException(self.model_class, action, form)
-        raise e
+        raise e  # pragma: no cover
 
 
 class AsyncSqlAlchemyCrudRepository(
@@ -325,4 +325,4 @@ class AsyncSqlAlchemyCrudRepository(
             raise UniqueViolationException(self.model_class, action, form)
         elif "foreign" in error_msg or "reference" in error_msg:
             raise RelationViolationException(self.model_class, action, form)
-        raise e
+        raise e  # pragma: no cover
