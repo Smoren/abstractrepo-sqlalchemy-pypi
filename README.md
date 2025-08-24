@@ -99,7 +99,7 @@ class SqlAlchemyUserRepository(
     def _db_model_class(self) -> Type[UserTable]:
         return UserTable
 
-    def _apply_id_filter_condition(self, query: Query[Type[UserTable]], item_id: int) -> Query[Type[UserTable]]:
+    def _apply_id_filter_condition(self, query: Query[UserTable], item_id: int) -> Query[UserTable]:
         return query.filter(UserTable.id == item_id)
 
     def _convert_db_item_to_model(self, db_item: UserTable) -> User:
@@ -123,10 +123,10 @@ class SqlAlchemyUserRepository(
         if form.username is not None:
             db_item.username = form.username
 
-    def _apply_default_filter(self, query: Query[Type[UserTable]]) -> Query[Type[UserTable]]:
+    def _apply_default_filter(self, query: Query[UserTable]) -> Query[UserTable]:
         return query
 
-    def _apply_default_order(self, query: Query[Type[UserTable]]) -> Query[Type[UserTable]]:
+    def _apply_default_order(self, query: Query[UserTable]) -> Query[UserTable]:
         return query.order_by(UserTable.id)
 
     def _create_session(self) -> Session:
