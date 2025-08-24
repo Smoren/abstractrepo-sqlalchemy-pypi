@@ -57,10 +57,6 @@ class SqlAlchemyNewsRepository(
     OrmCrudRepository[NewsTable, News, int, NewsCreateForm, NewsUpdateForm],
     NewsRepositoryInterface,
 ):
-    @property
-    def model_class(self) -> Type[News]:
-        return News
-
     def create_default_mock_collection(self, items: List[News]) -> None:
         with self._create_session() as sess:
             for item in items:
@@ -68,10 +64,14 @@ class SqlAlchemyNewsRepository(
             sess.commit()
 
     @property
-    def _db_model_class(self) -> type[NewsTable]:
+    def model_class(self) -> Type[News]:
+        return News
+
+    @property
+    def _db_model_class(self) -> Type[NewsTable]:
         return NewsTable
 
-    def _apply_id_filter_condition(self, query: Query[Type[NewsTable]], item_id: int) -> Query[Type[NewsTable]]:
+    def _apply_id_filter_condition(self, query: Query[NewsTable], item_id: int) -> Query[NewsTable]:
         return query.filter(NewsTable.id == item_id)
 
     def _convert_db_item_to_model(self, db_item: NewsTable) -> News:
@@ -93,10 +93,10 @@ class SqlAlchemyNewsRepository(
         db_item.title = form.title
         db_item.text = form.text
 
-    def _apply_default_filter(self, query: Query[Type[NewsTable]]) -> Query[Type[NewsTable]]:
+    def _apply_default_filter(self, query: Query[NewsTable]) -> Query[NewsTable]:
         return query
 
-    def _apply_default_order(self, query: Query[Type[NewsTable]]) -> Query[Type[NewsTable]]:
+    def _apply_default_order(self, query: Query[NewsTable]) -> Query[NewsTable]:
         return query.order_by(NewsTable.id)
 
 
@@ -104,15 +104,15 @@ class AsyncSqlAlchemyNewsRepository(
     AsyncSqlAlchemyCrudRepository[NewsTable, News, int, NewsCreateForm, NewsUpdateForm],
     AsyncNewsRepositoryInterface,
 ):
-    @property
-    def model_class(self) -> Type[News]:
-        return News
-
     async def create_default_mock_collection(self, items: List[News]) -> None:
         async with self._create_session() as sess:
             for item in items:
                 sess.add(NewsTable(id=item.id, title=item.title, text=item.text))
             await sess.commit()
+
+    @property
+    def model_class(self) -> Type[News]:
+        return News
 
     def _create_session(self) -> AsyncSession:
         return TEST_DB.async_session()
@@ -165,14 +165,11 @@ class SqlAlchemyUserRepository(
     def model_class(self) -> Type[User]:
         return User
 
-    def _username_exists(self, username: str) -> bool:
-        return self.count(AttributeSpecification('username', username)) > 0
-
     @property
     def _db_model_class(self) -> Type[UserTable]:
         return UserTable
 
-    def _apply_id_filter_condition(self, query: Query[Type[UserTable]], item_id: int) -> Query[Type[UserTable]]:
+    def _apply_id_filter_condition(self, query: Query[UserTable], item_id: int) -> Query[UserTable]:
         return query.filter(UserTable.id == item_id)
 
     def _convert_db_item_to_model(self, db_item: UserTable) -> User:
@@ -196,10 +193,10 @@ class SqlAlchemyUserRepository(
         if form.username is not None:
             db_item.username = form.username
 
-    def _apply_default_filter(self, query: Query[Type[UserTable]]) -> Query[Type[UserTable]]:
+    def _apply_default_filter(self, query: Query[UserTable]) -> Query[UserTable]:
         return query
 
-    def _apply_default_order(self, query: Query[Type[UserTable]]) -> Query[Type[UserTable]]:
+    def _apply_default_order(self, query: Query[UserTable]) -> Query[UserTable]:
         return query.order_by(UserTable.id)
 
 
@@ -217,10 +214,6 @@ class AsyncSqlAlchemyUserRepository(
     @property
     def model_class(self) -> Type[User]:
         return User
-
-    async def _username_exists(self, username: str) -> bool:
-        count = await self.count(AttributeSpecification('username', username))
-        return count > 0
 
     @property
     def _db_model_class(self) -> Type[UserTable]:

@@ -1,7 +1,7 @@
 from typing import List, Generic, Optional, Type, Tuple
 import abc
 
-from sqlalchemy import select, delete, update, Select
+from sqlalchemy import select, Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.exc import NoResultFound, IntegrityError
@@ -94,7 +94,7 @@ class SqlAlchemyCrudRepository(
                 sess.rollback()
                 raise ItemNotFoundException(self._db_model_class, item_id)
 
-    def _apply_filter(self, query: Query[Type[TDbModel]], filter_spec: SpecificationInterface) -> Query[Type[TDbModel]]:
+    def _apply_filter(self, query: Query[TDbModel], filter_spec: SpecificationInterface) -> Query[TDbModel]:
         if filter_spec is None:
             return self._apply_default_filter(query)
 
@@ -104,14 +104,14 @@ class SqlAlchemyCrudRepository(
 
         return query.filter(condition)
 
-    def _apply_order(self, query: Query[Type[TDbModel]], order_options: Optional[OrderOptions] = None) -> Query[Type[TDbModel]]:
+    def _apply_order(self, query: Query[TDbModel], order_options: Optional[OrderOptions] = None) -> Query[TDbModel]:
         if order_options is None:
             return self._apply_default_order(query)
 
         order_options = SqlAlchemyOptionsConverter[TDbModel]().convert(order_options)
         return query.order_by(*order_options.to_expression(self._db_model_class))
 
-    def _apply_paging(self, query: Query[Type[TDbModel]], paging_options: Optional[PagingOptions] = None) -> Query[Type[TDbModel]]:
+    def _apply_paging(self, query: Query[TDbModel], paging_options: Optional[PagingOptions] = None) -> Query[TDbModel]:
         if paging_options is None:
             return query
 
@@ -133,7 +133,7 @@ class SqlAlchemyCrudRepository(
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _apply_id_filter_condition(self, query: Query[Type[TDbModel]], item_id: TIdValueType) -> Query[Type[TDbModel]]:
+    def _apply_id_filter_condition(self, query: Query[TDbModel], item_id: TIdValueType) -> Query[TDbModel]:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -149,14 +149,14 @@ class SqlAlchemyCrudRepository(
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _apply_default_filter(self, query: Query[Type[TDbModel]]) -> Query[Type[TDbModel]]:
+    def _apply_default_filter(self, query: Query[TDbModel]) -> Query[TDbModel]:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _apply_default_order(self, query: Query[Type[TDbModel]]) -> Query[Type[TDbModel]]:
+    def _apply_default_order(self, query: Query[TDbModel]) -> Query[TDbModel]:
         raise NotImplementedError()
 
-    def _create_select_query(self, sess: Session) -> Query[Type[TDbModel]]:
+    def _create_select_query(self, sess: Session) -> Query[TDbModel]:
         return sess.query(self._db_model_class)
 
     def _check_violations(self, e: IntegrityError, form: object, action: str) -> None:

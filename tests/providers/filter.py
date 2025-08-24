@@ -2,7 +2,6 @@ from typing import Generator, Tuple, List
 
 from abstractrepo.specification import SpecificationInterface, AttributeSpecification, Operator, AndSpecification, \
     OrSpecification, NotSpecification
-from tests.fixtures.repo import AsyncNewsRepositoryInterface
 from tests.fixtures.models import News
 
 
