@@ -7,7 +7,7 @@
 [![Actions Status](https://github.com/Smoren/abstractrepo-sqlalchemy-pypi/workflows/Test/badge.svg)](https://github.com/Smoren/abstractrepo-sqlalchemy-pypi/actions)
 [![License](https://img.shields.io/github/license/Smoren/abstractrepo-sqlalchemy-pypi)](https://github.com/Smoren/abstractrepo-sqlalchemy-pypi/blob/master/LICENSE)
 
-The `AbstractRepo SQLAlchemy` library provides a concrete implementation of the [AbstractRepo](https://github.com/Smoren/abstractrepo-pypi) 
+The **AbstractRepo SQLAlchemy** library provides a concrete implementation of the [AbstractRepo](https://github.com/Smoren/abstractrepo-pypi) 
 interfaces for [SQLAlchemy](https://www.sqlalchemy.org/), a popular SQL toolkit and Object-Relational Mapper (ORM) for Python. It seamlessly integrates 
 the abstract repository pattern with SQLAlchemy's powerful features, enabling developers to build robust and maintainable data access layers.
 
@@ -31,7 +31,98 @@ To get started with `AbstractRepo SQLAlchemy`, install it using pip:
 pip install abstractrepo-sqlalchemy
 ```
 
-## Synchronous Usage Example
+## Table of Contents
+
+* [Core Components and Usage](#core-components-and-usage)
+    * [Repository Interface](#repository-interface)
+    * [Specifications](#specifications)
+    * [Ordering](#ordering)
+    * [Pagination](#pagination)
+    * [Exception Handling](#exception-handling)
+* [Examples](#examples)
+    * [Complete Synchronous Example](#complete-synchronous-example)
+    * [Complete Asynchronous Example](#complete-asynchronous-example)
+* [Best Practices](#best-practices)
+* [Dependencies](#dependencies)
+* [License](#license)
+
+## Core Components and Usage
+
+### Repository Interface
+
+The `SqlAlchemyCrudRepository` and `AsyncSqlAlchemyCrudRepository` classes provide concrete implementations of the 
+`CrudRepositoryInterface` and `AsyncCrudRepositoryInterface` respectively, bridging the `AbstractRepo` pattern with SQLAlchemy.
+
+These classes require you to define how your Pydantic business models map to SQLAlchemy database models and how 
+CRUD operations are performed at the database level. You achieve this by implementing several abstract methods and properties:
+
+| Name                         | Description                                                                            |
+|------------------------------|----------------------------------------------------------------------------------------|
+| `model_class`                | Returns the Pydantic business model class.                                             |
+| `_db_model_class`            | Returns the SQLAlchemy database model class.                                           |
+| `_create_session`            | Provides an SQLAlchemy session (synchronous `Session` or asynchronous `AsyncSession`). |
+| `_apply_id_filter_condition` | Applies a filter condition for a given item ID to the SQLAlchemy query/statement.      |
+| `_convert_db_item_to_model`  | Converts a SQLAlchemy database item to your Pydantic business model.                   |
+| `_create_db_item`            | Creates a SQLAlchemy database item from a Pydantic creation form.                      |
+| `_update_db_item`            | Updates an existing SQLAlchemy database item using data from a Pydantic update form.   |
+| `_apply_default_filter`      | Applies any default filter conditions to the SQLAlchemy query/statement.               |
+| `_apply_default_order`       | Applies any default ordering to the SQLAlchemy query/statement.                        |
+
+These classes are generic and can be used with any model class (e.g. Pydantic). Generics are used to specify the types 
+of the following:
+
+| Name            | Description                                                            |
+|-----------------|------------------------------------------------------------------------|
+| `TDbModel`      | The SQLAlchemy database model class.                                   |
+| `TModel`        | The Pydantic business model class.                                     |
+| `TIdValueType`  | The type of the model's identifier (primary key) attribute.            |
+| `TCreateSchema` | The Pydantic model used for creating a new instance of `TModel`.       |
+| `TUpdateSchema` | The Pydantic model used for updating an existing instance of `TModel`. |
+
+### Specifications
+
+**AbstractRepo SQLAlchemy** seamlessly integrates with the **Specification Pattern** from `abstractrepo`. 
+This allows you to define complex query criteria in a type-safe and reusable manner, which are then translated into 
+SQLAlchemy query expressions.
+
+The following specification types are supported:
+
+* `AttributeSpecification`
+* `AndSpecification`
+* `OrSpecification`
+* `NotSpecification`
+
+For detailed information please refer to the [Specifications section in the abstractrepo README](https://github.com/Smoren/abstractrepo-pypi#specifications).
+
+**AbstractRepo SQLAlchemy** handles the internal conversion of these generic specifications into SQLAlchemy-specific filter 
+conditions. You primarily use these specifications when calling `get_collection` or `count`.
+
+### Ordering
+
+**AbstractRepo SQLAlchemy** supports flexible ordering of query results using the `OrderOption` and `OrderOptions` 
+classes provided by `abstractrepo`. These are translated directly into SQLAlchemy's `order_by()` clauses.
+
+For a comprehensive understanding of `OrderOption` and `OrderOptions`, please consult the [Ordering section in the abstractrepo README](https://github.com/Smoren/abstractrepo-pypi#ordering).
+
+### Pagination
+
+Efficient handling of large datasets is achieved through pagination, implemented in `abstractrepo-sqlalchemy` using the 
+`PagingOptions` class from `abstractrepo`. This translates directly to SQLAlchemy's `limit()` and `offset()` methods.
+
+For details on `PagingOptions` (including `limit` and `offset`), refer to the [Pagination section in the abstractrepo README](https://github.com/Smoren/abstractrepo-pypi#pagination).
+
+### Exception Handling
+
+`abstractrepo-sqlalchemy` utilizes the custom exceptions defined in `abstractrepo` to provide clear and consistent error handling. These include:
+
+* `ItemNotFoundException`: Raised when an item is not found.
+* `UniqueViolationException`: Raised on unique constraint violations.
+
+For more details on these exceptions and their usage, please see the [Exception Handling section in the abstractrepo README](https://github.com/Smoren/abstractrepo-pypi#exception-handling).
+
+## Examples
+
+### Complete Synchronous Example
 
 ```python
 import abc
@@ -159,7 +250,7 @@ filtered_users = repo.get_collection(AndSpecification(
 ))
 ```
 
-## Asynchronous Usage Example
+### Complete Asynchronous Example
 
 ```python
 import abc
@@ -288,9 +379,15 @@ async def custom_async_code():
     ))
 ```
 
-## API Reference
+## Best Practices
 
-For the full API reference, see the [AbstractRepo documentation](https://github.com/Smoren/abstractrepo-pypi).
+* **Define Clear Interfaces:** Always define an abstract interface for your repository (e.g., `UserRepositoryInterface`) that extends `CrudRepositoryInterface` or `AsyncCrudRepositoryInterface`. This promotes loose coupling and makes your code easier to test and maintain.
+* **Separate Concerns:** Keep your SQLAlchemy models (`UserTable`) separate from your business models (Pydantic `User`). The repository acts as the bridge between these two layers, converting data as needed.
+* **Implement Abstract Methods:** When implementing `SqlAlchemyCrudRepository` or `AsyncSqlAlchemyCrudRepository`, ensure you correctly implement all abstract methods (`_db_model_class`, `_model_class`, `_apply_id_filter_condition`, `_convert_db_item_to_model`, `_create_db_item`, `_update_db_item`, `_apply_default_filter`, `_apply_default_order`, `_create_session`). These methods are crucial for the repository's functionality.
+* **Session Management:** The `_create_session` method is responsible for providing a SQLAlchemy session. For synchronous repositories, use `sessionmaker()`. For asynchronous repositories, use `async_sessionmaker()` and ensure your session is properly managed (e.g., using `async with self._create_session() as session:` for async operations).
+* **Custom Queries:** For queries that go beyond simple CRUD and specification-based filtering (e.g., complex joins, aggregations), add custom methods to your repository interface and implement them directly within your concrete repository class. These methods should leverage SQLAlchemy's powerful query capabilities.
+* **Error Handling:** Utilize the custom exceptions provided by `abstractrepo` (e.g., `ItemNotFoundException`, `UniqueViolationException`) for consistent error handling across your application.
+* **Type Hinting:** Leverage Python's type hinting extensively. It improves code readability, enables better IDE support, and helps catch errors early.
 
 ## Dependencies
 
