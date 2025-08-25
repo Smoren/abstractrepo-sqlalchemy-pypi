@@ -25,7 +25,7 @@ It is designed to work with any database dialect supported by SQLAlchemy, includ
 
 ## Installation
 
-To get started with `AbstractRepo SQLAlchemy`, install it using pip:
+To get started with **AbstractRepo SQLAlchemy**, install it using pip:
 
 ```shell
 pip install abstractrepo-sqlalchemy
